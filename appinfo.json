@@ -1,0 +1,39 @@
+{
+  "uuid": "0a7575eb-e5b9-456b-8701-3eacb62d74f1",
+  "shortName": "Notifications",
+  "longName": "Notification Center",
+  "companyName": "matejdro",
+  "versionCode": 3,
+  "versionLabel": "1.3.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {},
+  "resources": 
+{
+ "media": [
+     {
+      "menuIcon": true,
+      "type": "png",
+      "name": "ICON",
+      "file": "icon.png"
+      },
+      {
+      "type": "png",
+      "name": "INDICATOR_BUSY",
+      "file": "busy.png"
+      },
+      {
+      "type": "png",
+      "name": "COGWHEEL",
+      "file": "cogwheel.png"
+      },
+      {
+      "type": "png",
+      "name": "RECENT",
+      "file": "recent.png"
+      }
+    ]
+}
+
+}
