@@ -434,6 +434,7 @@ void notification_newNotification(DictionaryIterator *received)
 	bool inList = (flags & 0x02) != 0;
 	bool autoSwitch = (flags & 0x04) != 0;
 	vibratePeriodically = (flags & 0x08) != 0;
+	bool vibrateLonger = (flags & 0x10) != 0;
 
 	setTimeout = dict_find(received, 3)->value->uint16;
 
@@ -444,7 +445,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 		if (!inList)
 		{
-			if (numOfNotifications == 1)
+			if (numOfNotifications == 1 && vibrateLonger)
 				vibes_long_pulse();
 			else
 				vibes_short_pulse();
