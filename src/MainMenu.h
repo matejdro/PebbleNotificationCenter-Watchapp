@@ -10,5 +10,6 @@
 
 void init_menu_window();
 void menu_data_received(int packetId, DictionaryIterator* data);
+void close_menu_window();
 
 #endif /* MAINMENU_H_ */

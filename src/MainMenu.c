@@ -105,11 +105,19 @@ void window_unload(Window* me)
 	gbitmap_destroy(currentIcon);
 	gbitmap_destroy(historyIcon);
 	window_destroy(me);
+	me = NULL;
 }
 
 void window_load(Window *me) {
 	setCurWindow(0);
 }
+
+void close_menu_window()
+{
+	if (menuWindow != NULL)
+		window_stack_remove(menuWindow, false);
+}
+
 
 void init_menu_window()
 {

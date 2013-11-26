@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
+#include "MainMenu.h"
 
 typedef struct
 {
@@ -22,7 +23,9 @@ uint32_t elapsedTime = 0;
 bool appIdle = true;
 bool closeCommandSent = false;
 
+bool closeOnReceive = false;
 bool exitOnClose = false;
+bool enableCloseWindow = false;
 
 Window* notifyWindow;
 
@@ -171,11 +174,19 @@ void closeApp()
 	app_message_outbox_send();
 }
 
+void set_busy_indicator(bool value)
+{
+	busy = value;
+	layer_mark_dirty(statusbar);
+}
+
 void notification_remove_notification(uint8_t id, bool waitForSending, bool close)
 {
 	if (numOfNotifications <= 1 && close)
 	{
-		window_stack_pop(true);
+		if (!waitForSending)
+			window_stack_pop(true);
+
 		return;
 	}
 
@@ -258,6 +269,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 			dict_write_uint8(iterator, 2, 0);
 		}
 		app_message_outbox_send();
+
+		set_busy_indicator(true);
+		stopBusyAfterSend = true;
 	}
 
 	notification_remove_notification(pickedNotification, curNotification->dismissable, true);
@@ -363,16 +377,6 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 	refresh_notification();
 }
 
-void notification_back_single(ClickRecognizerRef recognizer, void *context)
-{
-	closeApp();
-}
-
-void notification_back_long(ClickRecognizerRef recognizer, void *context)
-{
-	window_stack_pop(true);
-}
-
 void registerButtons(void* context) {
 	window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) notification_center_single);
 
@@ -384,12 +388,6 @@ void registerButtons(void* context) {
 
 	window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) notification_up_click_proxy);
 	window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) notification_down_click_proxy);
-}
-
-void set_busy_indicator(bool value)
-{
-	busy = value;
-	layer_mark_dirty(statusbar);
 }
 
 void notification_sendMoreText(int32_t id, uint8_t offset)
@@ -435,6 +433,10 @@ void notification_newNotification(DictionaryIterator *received)
 	bool autoSwitch = (flags & 0x04) != 0;
 	vibratePeriodically = (flags & 0x08) != 0;
 	bool vibrateLonger = (flags & 0x10) != 0;
+
+	enableCloseWindow = (flags & 0x20) != 0;
+	if (!enableCloseWindow)
+		close_menu_window();
 
 	setTimeout = dict_find(received, 3)->value->uint16;
 
@@ -587,6 +589,11 @@ void notification_data_sent(DictionaryIterator *received, void *context)
 	{
 		stopBusyAfterSend = false;
 		set_busy_indicator(false);
+	}
+
+	if (closeOnReceive)
+	{
+		window_stack_pop(true);
 	}
 }
 
