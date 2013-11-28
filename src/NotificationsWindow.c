@@ -128,9 +128,9 @@ void refresh_notification()
 		bodyText = notification->text;
 	}
 
-//	GSize titleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), titleText, fonts_get_system_font(titleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-//	GSize subtitleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), subtitleText, fonts_get_system_font(subtitleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-//	GSize textSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), bodyText, fonts_get_system_font(textFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+	//	GSize titleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), titleText, fonts_get_system_font(titleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+	//	GSize subtitleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), subtitleText, fonts_get_system_font(subtitleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+	//	GSize textSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), bodyText, fonts_get_system_font(textFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
 
 	text_layer_set_font(title, fonts_get_system_font(titleFont));
 	text_layer_set_font(subTitle, fonts_get_system_font(subtitleFont));
@@ -180,18 +180,16 @@ void set_busy_indicator(bool value)
 	layer_mark_dirty(statusbar);
 }
 
-void notification_remove_notification(uint8_t id, bool waitForSending, bool close)
+void notification_remove_notification(uint8_t id, bool closeAutomatically)
 {
-	if (numOfNotifications <= 1 && close)
+	if (numOfNotifications <= 1 && closeAutomatically)
 	{
-		if (!waitForSending)
-			window_stack_pop(true);
-
+		window_stack_pop(true);
 		return;
 	}
 
 	if (numOfNotifications > 0)
-			numOfNotifications--;
+		numOfNotifications--;
 
 	uint8_t pos = notificationPositions[id];
 
@@ -211,7 +209,7 @@ void notification_remove_notification(uint8_t id, bool waitForSending, bool clos
 Notification* notification_add_notification()
 {
 	if (numOfNotifications >= 8)
-		notification_remove_notification(0, false, true);
+		notification_remove_notification(0, false);
 
 	uint8_t position = 0;
 	for (int i = 0; i < 8; i++)
@@ -274,7 +272,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 		stopBusyAfterSend = true;
 	}
 
-	notification_remove_notification(pickedNotification, curNotification->dismissable, true);
+	notification_remove_notification(pickedNotification, !curNotification->dismissable);
 }
 
 void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
@@ -477,7 +475,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 			if (entry.inList)
 			{
-				notification_remove_notification(i, false, true);
+				notification_remove_notification(i, false);
 				i--;
 			}
 		}
@@ -506,19 +504,16 @@ void notification_gotDismiss(DictionaryIterator *received)
 	int32_t id = dict_find(received, 1)->value->int32;
 	bool close = dict_find(received, 2) == NULL;
 
-	if (appIdle)
+	for (int i = 0; i < numOfNotifications; i++)
 	{
-		for (int i = 0; i < numOfNotifications; i++)
-		{
 
-			Notification entry = notificationData[notificationPositions[i]];
-			if (entry.id != id)
-				continue;
+		Notification entry = notificationData[notificationPositions[i]];
+		if (entry.id != id)
+			continue;
 
-			notification_remove_notification(i, false, close);
+		notification_remove_notification(i, false);
 
-			break;
-		}
+		break;
 	}
 
 
@@ -535,6 +530,8 @@ void notification_gotDismiss(DictionaryIterator *received)
 		dict_write_uint8(iterator, 2, 0);
 	}
 	app_message_outbox_send();
+	set_busy_indicator(true);
+	stopBusyAfterSend = true;
 }
 
 void notification_gotMoreText(DictionaryIterator *received)
@@ -694,15 +691,15 @@ void notification_window_init(bool liveNotification)
 
 	notifyWindow = window_create();
 
-//	if (exitOnClose)
-//		notifyWindow.overrides_back_button = true;
+	//	if (exitOnClose)
+	//		notifyWindow.overrides_back_button = true;
 
 
 	window_set_window_handlers(notifyWindow, (WindowHandlers) {
 		.appear = (WindowHandler)notification_appears,
-		.disappear = (WindowHandler) notification_disappears,
-		.load = (WindowHandler) notification_load,
-		.unload = (WindowHandler) notification_unload
+				.disappear = (WindowHandler) notification_disappears,
+				.load = (WindowHandler) notification_load,
+				.unload = (WindowHandler) notification_unload
 	});
 
 
