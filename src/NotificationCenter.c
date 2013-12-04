@@ -37,8 +37,6 @@ void received_data(DictionaryIterator *received, void *context) {
 
 	uint8_t packetId = dict_find(received, 0)->value->uint8;
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "PID %d %d", packetId, curWindow);
-
 	if (packetId == 0 && curWindow > 1)
 	{
 		switchWindow(1);
