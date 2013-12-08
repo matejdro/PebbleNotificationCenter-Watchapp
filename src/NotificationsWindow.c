@@ -678,40 +678,6 @@ void notification_disappears(Window *window)
 void notification_load(Window *window)
 {
 	busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
-}
-
-void notification_unload(Window *window)
-{
-	gbitmap_destroy(busyIndicator);
-}
-
-void notification_window_init(bool liveNotification)
-{
-	exitOnClose = liveNotification;
-
-	notifyWindow = window_create();
-
-	//	if (exitOnClose)
-	//		notifyWindow.overrides_back_button = true;
-
-
-	window_set_window_handlers(notifyWindow, (WindowHandlers) {
-		.appear = (WindowHandler)notification_appears,
-				.disappear = (WindowHandler) notification_disappears,
-				.load = (WindowHandler) notification_load,
-				.unload = (WindowHandler) notification_unload
-	});
-
-
-	closeCommandSent = false;
-	numOfNotifications = 0;
-	for (int i = 0; i < 8; i++)
-	{
-		notificationDataUsed[i] = false;
-	}
-
-	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
-	//registerButtons();
 
 	Layer* topLayer = window_get_root_layer(notifyWindow);
 
@@ -747,6 +713,44 @@ void notification_window_init(bool liveNotification)
 	text_layer_set_font(text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_overflow_mode(text, GTextOverflowModeWordWrap);
 	scroll_layer_add_child(scroll, (Layer*) text);
+}
+
+void notification_unload(Window *window)
+{
+	gbitmap_destroy(busyIndicator);
+
+	layer_destroy(statusbar);
+	layer_destroy(circlesLayer);
+	text_layer_destroy(title);
+	text_layer_destroy(subTitle);
+	text_layer_destroy(text);
+	scroll_layer_destroy(scroll);
+
+	window_destroy(window);
+}
+
+void notification_window_init(bool liveNotification)
+{
+	exitOnClose = liveNotification;
+
+	notifyWindow = window_create();
+
+	window_set_window_handlers(notifyWindow, (WindowHandlers) {
+		.appear = (WindowHandler)notification_appears,
+				.disappear = (WindowHandler) notification_disappears,
+				.load = (WindowHandler) notification_load,
+				.unload = (WindowHandler) notification_unload
+	});
+
+
+	closeCommandSent = false;
+	numOfNotifications = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		notificationDataUsed[i] = false;
+	}
+
+	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
 
 	window_set_fullscreen(notifyWindow, true);
 	window_stack_push(notifyWindow, false);

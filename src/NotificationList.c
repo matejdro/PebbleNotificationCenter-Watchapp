@@ -318,24 +318,8 @@ void list_data_received(int packetId, DictionaryIterator* data)
 }
 
 void list_window_load(Window *me) {
-	setCurWindow(2);
-
-	pickedEntry = -1;
-	pickedMode = 0;
-}
-
-void list_window_unload(Window *me) {
-	gbitmap_destroy(normalNotification);
-	gbitmap_destroy(ongoingNotification);
-
-}
-
-void init_notification_list_window()
-{
 	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
-
-	listWindow = window_create();
 
 	Layer* topLayer = window_get_root_layer(listWindow);
 
@@ -355,8 +339,27 @@ void init_notification_list_window()
 
 	layer_add_child(topLayer, (Layer*) listMenuLayer);
 
+	setCurWindow(2);
+
+	pickedEntry = -1;
+	pickedMode = 0;
+}
+
+void list_window_unload(Window *me) {
+	gbitmap_destroy(normalNotification);
+	gbitmap_destroy(ongoingNotification);
+
+	menu_layer_destroy(listMenuLayer);
+
+	window_destroy(me);
+}
+
+void init_notification_list_window()
+{
+	listWindow = window_create();
+
 	window_set_window_handlers(listWindow, (WindowHandlers){
-		.appear = list_window_load,
+		.load = list_window_load,
 		.unload = list_window_unload
 
 	});

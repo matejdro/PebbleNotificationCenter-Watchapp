@@ -104,27 +104,18 @@ void window_unload(Window* me)
 {
 	gbitmap_destroy(currentIcon);
 	gbitmap_destroy(historyIcon);
+
+	text_layer_destroy(menuLoadingLayer);
+	text_layer_destroy(quitTitle);
+	text_layer_destroy(quitText);
+
 	window_destroy(me);
 	me = NULL;
 }
 
 void window_load(Window *me) {
-	setCurWindow(0);
-}
-
-void close_menu_window()
-{
-	if (menuWindow != NULL)
-		window_stack_remove(menuWindow, false);
-}
-
-
-void init_menu_window()
-{
 	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	historyIcon = gbitmap_create_with_resource(RESOURCE_ID_RECENT);
-
-	menuWindow = window_create();
 
 	Layer* topLayer = window_get_root_layer(menuWindow);
 
@@ -145,6 +136,20 @@ void init_menu_window()
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
 
+
+	setCurWindow(0);
+}
+
+void close_menu_window()
+{
+	if (menuWindow != NULL)
+		window_stack_remove(menuWindow, false);
+}
+
+
+void init_menu_window()
+{
+	menuWindow = window_create();
 
 	window_set_window_handlers(menuWindow, (WindowHandlers){
 		.appear = window_load,
