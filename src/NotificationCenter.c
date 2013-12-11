@@ -95,5 +95,7 @@ int main(void) {
 	app_timer_register(300, timerTriggered, NULL);
 
 	app_event_loop();
+
+	window_stack_pop_all(false);
 	return 0;
 }
