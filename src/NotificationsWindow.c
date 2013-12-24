@@ -114,7 +114,7 @@ void refresh_notification()
 	char* subtitleText = "";
 	char* bodyText = "";
 
-	if (closeCommandSent || numOfNotifications < 1)
+	if (numOfNotifications < 1)
 	{
 		titleText = "No notifications";
 		subtitleText = "";
