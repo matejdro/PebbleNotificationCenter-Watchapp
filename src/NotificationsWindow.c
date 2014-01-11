@@ -158,6 +158,9 @@ void refresh_notification()
 	layer_set_frame((Layer*) text, GRect(2, titleSize.h + 1 + subtitleSize.h + 1, 144 - 4, textSize.h));
 
 	scroll_layer_set_content_size(scroll, GSize(144 - 4, titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5));
+	scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
+	scroll_layer_set_content_offset(scroll, GPoint(0, 0), true);
+
 
 	layer_mark_dirty(circlesLayer);
 }
@@ -166,7 +169,6 @@ void closeApp()
 {
 	closeCommandSent = true;
 	refresh_notification();
-	scroll_layer_set_content_offset(scroll, GPoint(0,0), false);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -262,7 +264,6 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 		{
 			closeCommandSent = true;
 			refresh_notification();
-			scroll_layer_set_content_offset(scroll, GPoint(0,0), false);
 
 			dict_write_uint8(iterator, 2, 0);
 		}
@@ -335,9 +336,6 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 	else
 		pickedNotification--;
 
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), true);
-
 	refresh_notification();
 }
 
@@ -369,23 +367,20 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 	else
 		pickedNotification++;
 
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), true);
-
 	refresh_notification();
 }
 
 void registerButtons(void* context) {
 	window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) notification_center_single);
 
-	window_multi_click_subscribe(BUTTON_ID_UP, 2, 2, 500, false, (ClickHandler) notification_up_double);
-	window_multi_click_subscribe(BUTTON_ID_DOWN, 2, 2, 500, false, (ClickHandler) notification_down_double);
+	window_multi_click_subscribe(BUTTON_ID_UP, 2, 2, 150, false, (ClickHandler) notification_up_double);
+	window_multi_click_subscribe(BUTTON_ID_DOWN, 2, 2, 150, false, (ClickHandler) notification_down_double);
 
 	window_raw_click_subscribe(BUTTON_ID_UP, (ClickHandler) notification_up_rawPressed, (ClickHandler) notification_up_rawReleased, NULL);
 	window_raw_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) notification_down_rawPressed, (ClickHandler) notification_down_rawReleased, NULL);
 
-	window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) notification_up_click_proxy);
-	window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) notification_down_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_UP, 200, (ClickHandler) notification_up_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 200, (ClickHandler) notification_down_click_proxy);
 }
 
 void notification_sendMoreText(int32_t id, uint8_t offset)
@@ -525,7 +520,6 @@ void notification_gotDismiss(DictionaryIterator *received)
 	{
 		closeCommandSent = true;
 		refresh_notification();
-		scroll_layer_set_content_offset(scroll, GPoint(0,0), false);
 
 		dict_write_uint8(iterator, 2, 0);
 	}
