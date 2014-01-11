@@ -248,7 +248,7 @@ uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void 
 
 
 int16_t menu_get_row_height_callback(MenuLayer *me,  MenuIndex *cell_index, void *data) {
-	return 55;
+	return 56;
 }
 
 void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index, MenuIndex old_index, void *callback_context)
@@ -261,9 +261,9 @@ void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index, MenuInd
 void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
 	graphics_context_set_text_color(ctx, GColorBlack);
 
-	graphics_draw_text(ctx, getTitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(34, 0, 144 - 35, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getSubtitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(34, 20, 144 - 35, 15), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getDate(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), GRect(34, 35, 144 - 35, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getTitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(34, 0, 144 - 35, 21), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getSubtitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(34, 21, 144 - 35, 17), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getDate(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), GRect(34, 39, 144 - 35, 18), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 
 	GBitmap* image;
 	switch (getType(cell_index->row))
