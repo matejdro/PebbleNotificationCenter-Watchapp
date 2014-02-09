@@ -445,6 +445,8 @@ void notification_newNotification(DictionaryIterator *received)
 			else
 				vibes_short_pulse();
 
+			light_enable_interaction();
+
 			appIdle = true;
 			elapsedTime = 0;
 		}
