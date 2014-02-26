@@ -28,6 +28,28 @@ void show_loading()
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 }
 
+void show_old_watchapp()
+{
+	layer_set_hidden((Layer *) menuLoadingLayer, false);
+	layer_set_hidden((Layer *) quitTitle, true);
+	layer_set_hidden((Layer *) quitText, true);
+	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
+
+	text_layer_set_text(menuLoadingLayer, "Please update watch app");
+
+}
+
+void show_old_android()
+{
+	layer_set_hidden((Layer *) menuLoadingLayer, false);
+	layer_set_hidden((Layer *) quitTitle, true);
+	layer_set_hidden((Layer *) quitText, true);
+	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
+
+	text_layer_set_text(menuLoadingLayer, "Please update android app");
+
+}
+
 void show_quit()
 {
 	layer_set_hidden((Layer *) menuLoadingLayer, true);
@@ -92,9 +114,6 @@ void menu_data_received(int packetId, DictionaryIterator* data)
 		init_notification_list_window();
 		list_data_received(packetId, data);
 
-		break;
-	case 3:
-		show_menu();
 		break;
 	}
 

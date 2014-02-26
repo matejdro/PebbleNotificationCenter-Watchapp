@@ -15,9 +15,6 @@ typedef struct
 
 } Notification;
 
-uint8_t textSize = 0;
-uint16_t setTimeout = 0;
-bool vibratePeriodically = true;
 
 uint32_t elapsedTime = 0;
 bool appIdle = true;
@@ -25,7 +22,6 @@ bool closeCommandSent = false;
 
 bool closeOnReceive = false;
 bool exitOnClose = false;
-bool enableCloseWindow = false;
 
 Window* notifyWindow;
 
@@ -88,28 +84,6 @@ char *itoa(int32_t num)
 
 void refresh_notification()
 {
-	char* titleFont;
-	char* subtitleFont;
-	char* textFont;
-	switch (textSize)
-	{
-	case 1:
-		titleFont = FONT_KEY_GOTHIC_24_BOLD;
-		subtitleFont = FONT_KEY_GOTHIC_18_BOLD;
-		textFont = FONT_KEY_GOTHIC_18;
-		break;
-	case 2:
-		titleFont = FONT_KEY_GOTHIC_28_BOLD;
-		subtitleFont = FONT_KEY_GOTHIC_24_BOLD;
-		textFont = FONT_KEY_GOTHIC_24;
-		break;
-	default:
-		titleFont = FONT_KEY_GOTHIC_18_BOLD;
-		subtitleFont = FONT_KEY_GOTHIC_14_BOLD;
-		textFont = FONT_KEY_GOTHIC_14;
-		break;
-	}
-
 	char* titleText = "";
 	char* subtitleText = "";
 	char* bodyText = "";
@@ -131,10 +105,6 @@ void refresh_notification()
 	//	GSize titleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), titleText, fonts_get_system_font(titleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
 	//	GSize subtitleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), subtitleText, fonts_get_system_font(subtitleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
 	//	GSize textSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), bodyText, fonts_get_system_font(textFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-
-	text_layer_set_font(title, fonts_get_system_font(titleFont));
-	text_layer_set_font(subTitle, fonts_get_system_font(subtitleFont));
-	text_layer_set_font(text, fonts_get_system_font(textFont));
 
 	text_layer_set_text(title, titleText);
 	text_layer_set_text(subTitle, subtitleText);
@@ -413,25 +383,15 @@ void notification_newNotification(DictionaryIterator *received)
 {
 	set_busy_indicator(true);
 
-
 	int32_t id = dict_find(received, 1)->value->int32;
-	textSize = dict_find(received, 2)->value->uint8;
 
 	uint8_t* configBytes = dict_find(received, 2)->value->data;
 
-	textSize = configBytes[0];
-
 	uint8_t flags = configBytes[1];
 	bool inList = (flags & 0x02) != 0;
-	bool autoSwitch = (flags & 0x04) != 0;
-	vibratePeriodically = (flags & 0x08) != 0;
-	bool vibrateLonger = (flags & 0x10) != 0;
 
-	enableCloseWindow = (flags & 0x20) != 0;
-	if (!enableCloseWindow)
+	if (!config_dontClose && exitOnClose)
 		close_menu_window();
-
-	setTimeout = dict_find(received, 3)->value->uint16;
 
 	Notification* notification = notification_find_notification(id);
 	if (notification == NULL)
@@ -440,10 +400,16 @@ void notification_newNotification(DictionaryIterator *received)
 
 		if (!inList)
 		{
-			if (numOfNotifications == 1 && vibrateLonger)
-				vibes_long_pulse();
-			else
-				vibes_short_pulse();
+			if (config_vibrateMode > 0)
+			{
+				if (numOfNotifications == 1 && config_vibrateMode == 1)
+					vibes_long_pulse();
+				else
+					vibes_short_pulse();
+			}
+
+			if (config_lightScreen)
+				light_enable_interaction();
 
 			appIdle = true;
 			elapsedTime = 0;
@@ -487,7 +453,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 	if (numOfNotifications == 1)
 		refresh_notification();
-	else if (autoSwitch)
+	else if (config_autoSwitchNotifications)
 	{
 		pickedNotification = numOfNotifications - 1;
 		refresh_notification();
@@ -639,13 +605,13 @@ void notification_second_tick()
 
 	elapsedTime++;
 
-	if (appIdle && setTimeout > 0 && setTimeout < elapsedTime)
+	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime)
 	{
 		closeApp();
 		return;
 	}
 
-	if (vibratePeriodically && appIdle && elapsedTime > 0 && elapsedTime % 10 == 0 && !notificationData[notificationPositions[pickedNotification]].inList)
+	if (config_vibratePeriodically > 0 && appIdle && elapsedTime > 0 && elapsedTime % config_vibratePeriodically == 0 && !notificationData[notificationPositions[pickedNotification]].inList)
 	{
 		vibes_short_pulse();
 	}
@@ -707,6 +673,11 @@ void notification_load(Window *window)
 	text_layer_set_font(text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_overflow_mode(text, GTextOverflowModeWordWrap);
 	scroll_layer_add_child(scroll, (Layer*) text);
+
+	text_layer_set_font(title, fonts_get_system_font(config_getFontResource(config_titleFont)));
+	text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(config_subtitleFont)));
+	text_layer_set_font(text, fonts_get_system_font(config_getFontResource(config_bodyFont)));
+
 }
 
 void notification_unload(Window *window)
