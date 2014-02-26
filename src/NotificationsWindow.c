@@ -400,7 +400,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 		if (!inList)
 		{
-			if (config_vibrateMode > 0)
+			if (config_vibrateMode > 0 && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
 			{
 				if (numOfNotifications == 1 && config_vibrateMode == 1)
 					vibes_long_pulse();
