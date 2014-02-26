@@ -411,6 +411,8 @@ void notification_newNotification(DictionaryIterator *received)
 			if (config_lightScreen)
 				light_enable_interaction();
 
+			light_enable_interaction();
+
 			appIdle = true;
 			elapsedTime = 0;
 		}
