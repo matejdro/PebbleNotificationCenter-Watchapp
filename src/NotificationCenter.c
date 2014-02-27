@@ -20,6 +20,7 @@ bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
+uint8_t config_shakeAction;
 
 const char* config_getFontResource(int id)
 {
@@ -106,6 +107,8 @@ void received_config(DictionaryIterator *received)
 	config_showActive = (data[7] & 0x04) != 0;
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
+	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
+	config_shakeAction = data[10];
 
 	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
 	if (supportedVersion > WATCHAPP_VERSION)

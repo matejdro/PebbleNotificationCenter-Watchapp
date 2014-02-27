@@ -19,6 +19,7 @@ typedef struct
 uint32_t elapsedTime = 0;
 bool appIdle = true;
 bool closeCommandSent = false;
+bool vibrating = false;
 
 bool closeOnReceive = false;
 bool exitOnClose = false;
@@ -353,6 +354,11 @@ void registerButtons(void* context) {
 	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 200, (ClickHandler) notification_down_click_proxy);
 }
 
+void vibration_stopped(void* data)
+{
+	vibrating = false;
+}
+
 void notification_sendMoreText(int32_t id, uint8_t offset)
 {
 	DictionaryIterator *iterator;
@@ -406,6 +412,9 @@ void notification_newNotification(DictionaryIterator *received)
 					vibes_long_pulse();
 				else
 					vibes_short_pulse();
+
+				vibrating = true;
+				app_timer_register(700, vibration_stopped, NULL);
 			}
 
 			if (config_lightScreen)
@@ -599,6 +608,17 @@ void updateStatusClock()
 	text_layer_set_text(statusClock, clockText);
 }
 
+void accelerometer_shake(AccelAxisType axis, int32_t direction)
+{
+	if (vibrating) //Vibration seems to generate a lot of false positives
+		return;
+
+	if (config_shakeAction == 1)
+		appIdle = false;
+	else if (config_shakeAction == 2)
+		notification_center_single(NULL, NULL);
+}
+
 
 void notification_second_tick()
 {
@@ -615,6 +635,8 @@ void notification_second_tick()
 
 	if (config_vibratePeriodically > 0 && appIdle && elapsedTime > 0 && elapsedTime % config_vibratePeriodically == 0 && !notificationData[notificationPositions[pickedNotification]].inList)
 	{
+		vibrating = true;
+		app_timer_register(500, vibration_stopped, NULL);
 		vibes_short_pulse();
 	}
 
@@ -680,6 +702,9 @@ void notification_load(Window *window)
 	text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(config_subtitleFont)));
 	text_layer_set_font(text, fonts_get_system_font(config_getFontResource(config_bodyFont)));
 
+	if (config_shakeAction > 0)
+		accel_tap_service_subscribe(accelerometer_shake);
+
 }
 
 void notification_unload(Window *window)
@@ -692,6 +717,9 @@ void notification_unload(Window *window)
 	text_layer_destroy(subTitle);
 	text_layer_destroy(text);
 	scroll_layer_destroy(scroll);
+
+	if (config_shakeAction > 0)
+		accel_tap_service_unsubscribe();
 
 	window_destroy(window);
 }
