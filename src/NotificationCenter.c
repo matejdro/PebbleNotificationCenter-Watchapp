@@ -7,7 +7,7 @@
 static const uint16_t WATCHAPP_VERSION = 8;
 
 uint8_t curWindow = 0;
-bool gotNotification = false;
+bool gotConfig = false;
 
 uint8_t config_titleFont;
 uint8_t config_subtitleFont;
@@ -119,6 +119,8 @@ void received_config(DictionaryIterator *received)
 		return;
 	}
 
+	gotConfig = true;
+
 	bool notificationWaiting = (data[7] & 0x08) != 0;
 	if (notificationWaiting || !config_showActive)
 	{
@@ -138,8 +140,6 @@ void received_config(DictionaryIterator *received)
 }
 
 void received_data(DictionaryIterator *received, void *context) {
-	gotNotification = true;
-
 	uint8_t packetId = dict_find(received, 0)->value->uint8;
 
 	if (packetId == 3)
@@ -147,6 +147,8 @@ void received_data(DictionaryIterator *received, void *context) {
 		received_config(received);
 		return;
 	}
+	else if (!gotConfig)
+		return;
 
 	if (packetId == 0 && curWindow > 1)
 	{
