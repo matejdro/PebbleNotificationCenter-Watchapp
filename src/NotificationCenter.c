@@ -96,6 +96,18 @@ void received_config(DictionaryIterator *received)
 {
 	uint8_t* data = dict_find(received, 1)->value->data;
 
+	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
+	if (supportedVersion > WATCHAPP_VERSION)
+	{
+		show_old_watchapp();
+		return;
+	}
+	else if (supportedVersion < WATCHAPP_VERSION)
+	{
+		show_old_android();
+		return;
+	}
+
 	config_titleFont = data[0];
 	config_subtitleFont = data[1];
 	config_bodyFont = data[2];
@@ -109,18 +121,6 @@ void received_config(DictionaryIterator *received)
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_shakeAction = data[10];
-
-	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
-	if (supportedVersion > WATCHAPP_VERSION)
-	{
-		show_old_watchapp();
-		return;
-	}
-	else if (supportedVersion < WATCHAPP_VERSION)
-	{
-		show_old_android();
-		return;
-	}
 
 	gotConfig = true;
 
