@@ -4,7 +4,7 @@
 #include "MainMenu.h"
 #include "NotificationList.h"
 
-static const uint16_t WATCHAPP_VERSION = 8;
+static const uint16_t WATCHAPP_VERSION = 9;
 
 uint8_t curWindow = 0;
 bool gotConfig = false;
