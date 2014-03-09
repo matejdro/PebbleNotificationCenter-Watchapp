@@ -119,7 +119,6 @@ void received_config(DictionaryIterator *received)
 	config_showActive = (data[7] & 0x04) != 0;
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
-	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_shakeAction = data[10];
 
 	gotConfig = true;
