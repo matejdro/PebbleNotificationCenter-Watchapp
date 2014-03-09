@@ -35,7 +35,7 @@ void show_old_watchapp()
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
-	text_layer_set_text(menuLoadingLayer, "Please update watch app");
+	text_layer_set_text(menuLoadingLayer, "Please update Notification Center watch app");
 
 }
 
@@ -46,7 +46,7 @@ void show_old_android()
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
-	text_layer_set_text(menuLoadingLayer, "Please update android app");
+	text_layer_set_text(menuLoadingLayer, "Please update Notification Center android app");
 
 }
 
@@ -138,7 +138,7 @@ void window_load(Window *me) {
 
 	Layer* topLayer = window_get_root_layer(menuWindow);
 
-	menuLoadingLayer = text_layer_create(GRect(0, 10, 144, 168 - 16));
+	menuLoadingLayer = text_layer_create(GRect(10, 10, 144 - 10, 168 - 16));
 	text_layer_set_text_alignment(menuLoadingLayer, GTextAlignmentCenter);
 	text_layer_set_text(menuLoadingLayer, "Loading...");
 	text_layer_set_font(menuLoadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
