@@ -4,7 +4,7 @@
 #include "MainMenu.h"
 #include "NotificationList.h"
 
-static const uint16_t WATCHAPP_VERSION = 9;
+static const uint16_t PROTOCOL_VERSION = 9;
 
 uint8_t curWindow = 0;
 bool gotConfig = false;
@@ -102,7 +102,7 @@ void received_config(DictionaryIterator *received)
 		show_old_watchapp();
 		return;
 	}
-	else if (supportedVersion < WATCHAPP_VERSION)
+	else if (supportedVersion < PROTOCOL_VERSION)
 	{
 		show_old_android();
 		return;
