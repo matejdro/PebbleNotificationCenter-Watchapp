@@ -105,9 +105,14 @@ void menu_data_received(int packetId, DictionaryIterator* data)
 	switch (packetId)
 	{
 	case 0:
-		show_quit();
 		notification_window_init(true);
 		notification_received_data(packetId, data);
+
+		if (config_dontClose)
+			show_quit();
+		else
+			window_stack_remove(menuWindow, false);
+
 		break;
 	case 2:
 		window_stack_pop(true);
@@ -159,11 +164,6 @@ void window_load(Window *me) {
 	setCurWindow(0);
 }
 
-void close_menu_window()
-{
-	if (menuWindow != NULL)
-		window_stack_remove(menuWindow, false);
-}
 
 
 void init_menu_window()

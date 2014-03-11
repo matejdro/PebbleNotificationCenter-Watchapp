@@ -244,7 +244,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 		stopBusyAfterSend = true;
 	}
 
-	notification_remove_notification(pickedNotification, !curNotification->dismissable);
+	notification_remove_notification(pickedNotification, true);
 }
 
 void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
@@ -395,9 +395,6 @@ void notification_newNotification(DictionaryIterator *received)
 
 	uint8_t flags = configBytes[1];
 	bool inList = (flags & 0x02) != 0;
-
-	if (!config_dontClose && exitOnClose)
-		close_menu_window();
 
 	Notification* notification = notification_find_notification(id);
 	if (notification == NULL)
