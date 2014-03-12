@@ -97,7 +97,7 @@ void received_config(DictionaryIterator *received)
 	uint8_t* data = dict_find(received, 1)->value->data;
 
 	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
-	if (supportedVersion > WATCHAPP_VERSION)
+	if (supportedVersion > PROTOCOL_VERSION)
 	{
 		show_old_watchapp();
 		return;
