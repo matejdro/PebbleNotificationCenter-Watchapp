@@ -18,7 +18,6 @@ typedef struct
 
 uint32_t elapsedTime = 0;
 bool appIdle = true;
-bool closeCommandSent = false;
 bool vibrating = false;
 
 bool closeOnReceive = false;
@@ -138,7 +137,6 @@ void refresh_notification()
 
 void closeApp()
 {
-	closeCommandSent = true;
 	refresh_notification();
 
 	DictionaryIterator *iterator;
@@ -233,7 +231,6 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 		dict_write_int32(iterator, 1, curNotification->id);
 		if (numOfNotifications <= 1 && exitOnClose)
 		{
-			closeCommandSent = true;
 			refresh_notification();
 
 			dict_write_uint8(iterator, 2, 0);
@@ -490,7 +487,6 @@ void notification_gotDismiss(DictionaryIterator *received)
 	dict_write_uint8(iterator, 0, 9);
 	if (numOfNotifications < 1 && exitOnClose && close)
 	{
-		closeCommandSent = true;
 		refresh_notification();
 
 		dict_write_uint8(iterator, 2, 0);
@@ -617,9 +613,6 @@ void accelerometer_shake(AccelAxisType axis, int32_t direction)
 
 void notification_second_tick()
 {
-	if (closeCommandSent)
-		return;
-
 	elapsedTime++;
 
 	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime)
@@ -733,7 +726,6 @@ void notification_window_init(bool liveNotification)
 	});
 
 
-	closeCommandSent = false;
 	numOfNotifications = 0;
 	for (int i = 0; i < 8; i++)
 	{
