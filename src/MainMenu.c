@@ -171,7 +171,7 @@ void init_menu_window()
 	menuWindow = window_create();
 
 	window_set_window_handlers(menuWindow, (WindowHandlers){
-		.appear = window_load,
+		.load = window_load,
 		.unload = window_unload
 	});
 
