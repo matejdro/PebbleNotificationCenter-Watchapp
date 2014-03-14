@@ -621,7 +621,7 @@ void notification_second_tick()
 		return;
 	}
 
-	if (config_vibratePeriodically > 0 && appIdle && elapsedTime > 0 && elapsedTime % config_vibratePeriodically == 0 && !notificationData[notificationPositions[pickedNotification]].inList)
+	if (config_vibratePeriodically > 0 && appIdle && elapsedTime > 0 && elapsedTime % config_vibratePeriodically == 0 && !notificationData[notificationPositions[pickedNotification]].inList && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
 	{
 		vibrating = true;
 		app_timer_register(500, vibration_stopped, NULL);
