@@ -17,7 +17,6 @@ TextLayer* menuLoadingLayer;
 TextLayer* quitTitle;
 TextLayer* quitText;
 
-
 SimpleMenuLayer* menuLayer;
 
 void show_loading()
@@ -102,6 +101,7 @@ void show_menu()
 
 void menu_data_received(int packetId, DictionaryIterator* data)
 {
+
 	switch (packetId)
 	{
 	case 0:
@@ -134,7 +134,7 @@ void window_unload(Window* me)
 	text_layer_destroy(quitText);
 
 	window_destroy(me);
-	me = NULL;
+
 }
 
 void window_load(Window *me) {
@@ -159,12 +159,12 @@ void window_load(Window *me) {
 	text_layer_set_text(quitText, "Quitting...\n Please wait");
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
-
-
-	setCurWindow(0);
 }
 
-
+void menu_appears(Window* window)
+{
+	setCurWindow(0);
+}
 
 void init_menu_window()
 {
@@ -172,7 +172,8 @@ void init_menu_window()
 
 	window_set_window_handlers(menuWindow, (WindowHandlers){
 		.load = window_load,
-		.unload = window_unload
+		.unload = window_unload,
+		.appear = menu_appears
 	});
 
 	window_stack_push(menuWindow, true /* Animated */);

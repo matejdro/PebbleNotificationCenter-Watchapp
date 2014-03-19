@@ -22,6 +22,7 @@ bool vibrating = false;
 
 bool closeOnReceive = false;
 bool exitOnClose = false;
+bool closeSent = false;
 
 Window* notifyWindow;
 
@@ -137,8 +138,6 @@ void refresh_notification()
 
 void closeApp()
 {
-	refresh_notification();
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 7);
@@ -234,6 +233,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 			refresh_notification();
 
 			dict_write_uint8(iterator, 2, 0);
+			closeSent = true;
 		}
 		app_message_outbox_send();
 
@@ -617,7 +617,7 @@ void notification_second_tick()
 
 	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime)
 	{
-		closeApp();
+		window_stack_pop(true);
 		return;
 	}
 
@@ -642,8 +642,6 @@ void notification_appears(Window *window)
 
 void notification_disappears(Window *window)
 {
-	if (exitOnClose)
-		closeApp();
 	tick_timer_service_unsubscribe();
 }
 
@@ -697,19 +695,21 @@ void notification_load(Window *window)
 
 void notification_unload(Window *window)
 {
-	gbitmap_destroy(busyIndicator);
-
 	layer_destroy(statusbar);
 	layer_destroy(circlesLayer);
 	text_layer_destroy(title);
 	text_layer_destroy(subTitle);
 	text_layer_destroy(text);
 	scroll_layer_destroy(scroll);
+	gbitmap_destroy(busyIndicator);
 
 	if (config_shakeAction > 0)
 		accel_tap_service_unsubscribe();
 
 	window_destroy(window);
+
+	if (exitOnClose && !closeSent)
+		closeApp();
 }
 
 void notification_window_init(bool liveNotification)
