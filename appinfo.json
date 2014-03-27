@@ -3,8 +3,8 @@
   "shortName": "Notifications",
   "longName": "Notification Center",
   "companyName": "matejdro",
-  "versionCode": 10,
-  "versionLabel": "2.1.2",
+  "versionCode": 11,
+  "versionLabel": "2.1.3",
   "watchapp": {
     "watchface": false
   },

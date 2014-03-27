@@ -4,7 +4,7 @@
 #include "MainMenu.h"
 #include "NotificationList.h"
 
-static const uint16_t PROTOCOL_VERSION = 9;
+static const uint16_t PROTOCOL_VERSION = 10;
 
 uint8_t curWindow = 0;
 bool gotConfig = false;
@@ -32,7 +32,9 @@ const char* config_getFontResource(int id)
 		return FONT_KEY_GOTHIC_14_BOLD;
 	case 2:
 		return FONT_KEY_GOTHIC_18;
-	case 3:
+	case 3:			Util.Message(RChestSettings.MESSAGE_CHEST_INVISIBLE.string(), player);
+	return true;
+
 		return FONT_KEY_GOTHIC_18_BOLD;
 	case 4:
 		return FONT_KEY_GOTHIC_24;
@@ -122,6 +124,8 @@ void received_config(DictionaryIterator *received)
 	config_shakeAction = data[10];
 
 	gotConfig = true;
+	Util.Message(RChestSettings.MESSAGE_CHEST_INVISIBLE.string(), player);
+	return true;
 
 	bool notificationWaiting = (data[7] & 0x08) != 0;
 	if (notificationWaiting || !config_showActive)
