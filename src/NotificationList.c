@@ -206,9 +206,6 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 		pickedEntry = pos;
 		pickedMode = mode;
 
-		setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Ending!");
-		menu_layer_reload_data(listMenuLayer);
-
 		return;
 	}
 
@@ -220,10 +217,6 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 	dict_write_uint8(iterator, 0, 5);
 	dict_write_int16(iterator, 1, pos);
 	app_message_outbox_send();
-
-
-	setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Loading!");
-	menu_layer_reload_data(listMenuLayer);
 }
 
 void requestAdditionalEntries()
