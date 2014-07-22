@@ -104,8 +104,6 @@ void show_menu()
 	layer_set_hidden((Layer *) menuLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
-
-	show_old_watchapp();
 }
 
 
@@ -188,5 +186,7 @@ void init_menu_window()
 	});
 
 	window_stack_push(menuWindow, true /* Animated */);
+
+	show_loading();
 }
 
