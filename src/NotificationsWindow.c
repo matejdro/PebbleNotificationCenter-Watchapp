@@ -735,6 +735,6 @@ void notification_window_init(bool liveNotification)
 	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
 
 	window_set_fullscreen(notifyWindow, true);
-	window_stack_push(notifyWindow, false);
+	window_stack_push(notifyWindow, true);
 
 }

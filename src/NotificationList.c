@@ -339,8 +339,6 @@ void list_window_load(Window *me) {
 
 	layer_add_child(topLayer, (Layer*) listMenuLayer);
 
-	setCurWindow(2);
-
 	pickedEntry = -1;
 	pickedMode = 0;
 }
@@ -354,15 +352,23 @@ void list_window_unload(Window *me) {
 	window_destroy(me);
 }
 
+void list_window_appear(Window* me)
+{
+	setCurWindow(2);
+}
+
 void init_notification_list_window()
 {
 	listWindow = window_create();
 
 	window_set_window_handlers(listWindow, (WindowHandlers){
+		.appear = list_window_appear,
 		.load = list_window_load,
 		.unload = list_window_unload
 
 	});
+
+	window_set_fullscreen(listWindow, false);
 
 	window_stack_push(listWindow, true /* Animated */);
 }
