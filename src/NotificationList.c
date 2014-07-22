@@ -205,6 +205,11 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 	{
 		pickedEntry = pos;
 		pickedMode = mode;
+
+		setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Ending!");
+		menu_layer_reload_data(listMenuLayer);
+
+
 		return;
 	}
 
@@ -216,6 +221,9 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
+	setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Loading!");
+	menu_layer_reload_data(listMenuLayer);
 }
 
 void requestAdditionalEntries()
@@ -338,9 +346,6 @@ void list_window_load(Window *me) {
 	menu_layer_set_click_config_onto_window(listMenuLayer, listWindow);
 
 	layer_add_child(topLayer, (Layer*) listMenuLayer);
-
-	pickedEntry = -1;
-	pickedMode = 0;
 }
 
 void list_window_unload(Window *me) {
@@ -355,6 +360,10 @@ void list_window_unload(Window *me) {
 void list_window_appear(Window* me)
 {
 	setCurWindow(2);
+
+	ending = false;
+	pickedEntry = -1;
+	pickedMode = 0;
 }
 
 void init_notification_list_window()
