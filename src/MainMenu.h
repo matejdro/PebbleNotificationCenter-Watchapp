@@ -10,6 +10,7 @@
 
 void init_menu_window();
 void menu_data_received(int packetId, DictionaryIterator* data);
+void menu_comm_failed(DictionaryIterator *received, AppMessageResult reason, void *context);
 void close_menu_window();
 void show_menu();
 void show_old_watchapp();

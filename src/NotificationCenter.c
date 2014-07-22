@@ -126,13 +126,13 @@ void received_config(DictionaryIterator *received)
 	bool notificationWaiting = (data[7] & 0x08) != 0;
 	if (notificationWaiting || !config_showActive)
 	{
+		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+		app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
 		DictionaryIterator *iterator;
 		app_message_outbox_begin(&iterator);
 		dict_write_uint8(iterator, 0, 10);
 		app_message_outbox_send();
-
-		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-		app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 	}
 	else
 	{
@@ -184,9 +184,20 @@ void data_sent(DictionaryIterator *received, void *context)
 	}
 }
 
+void comm_failed(DictionaryIterator *received, AppMessageResult reason, void *context)
+{
+	switch (curWindow)
+	{
+	case 0:
+		menu_comm_failed(received, reason, context);
+		break;
+	}
+}
+
 int main(void) {
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(data_sent);
+	app_message_register_outbox_failed(comm_failed);
 	app_message_open(124, 50);
 
 	switchWindow(0);

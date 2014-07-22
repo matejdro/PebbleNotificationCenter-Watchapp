@@ -19,6 +19,8 @@ TextLayer* quitText;
 
 SimpleMenuLayer* menuLayer;
 
+char debugErrorText[10];
+
 void show_loading()
 {
 	layer_set_hidden((Layer *) menuLoadingLayer, false);
@@ -54,6 +56,13 @@ void show_quit()
 	layer_set_hidden((Layer *) menuLoadingLayer, true);
 	layer_set_hidden((Layer *) quitTitle, false);
 	layer_set_hidden((Layer *) quitText, false);
+}
+
+void menu_comm_failed(DictionaryIterator *received, AppMessageResult reason, void *context)
+{
+	snprintf(debugErrorText, 10, "ERROR %d", (uint8_t) reason);
+	text_layer_set_text(quitText, debugErrorText);
+	text_layer_set_text(menuLoadingLayer, debugErrorText);
 }
 
 void menu_picked(int index, void* context)

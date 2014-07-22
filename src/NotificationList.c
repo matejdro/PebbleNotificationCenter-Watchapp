@@ -187,14 +187,14 @@ uint8_t getEmptySpacesUp()
 
 void requestNotification(uint16_t pos)
 {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 4);
 	dict_write_uint16(iterator, 1, pos);
 	app_message_outbox_send();
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	ending = true;
 }
@@ -209,9 +209,11 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 		setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Ending!");
 		menu_layer_reload_data(listMenuLayer);
 
-
 		return;
 	}
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -219,8 +221,6 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 	dict_write_int16(iterator, 1, pos);
 	app_message_outbox_send();
 
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	setTitle(menu_layer_get_selected_index(listMenuLayer).row, "Loading!");
 	menu_layer_reload_data(listMenuLayer);

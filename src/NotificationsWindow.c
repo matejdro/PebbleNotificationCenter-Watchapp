@@ -358,26 +358,26 @@ void vibration_stopped(void* data)
 
 void notification_sendMoreText(int32_t id, uint8_t offset)
 {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 1);
 	dict_write_int32(iterator, 1, id);
 	dict_write_uint8(iterator, 2, offset);
 	app_message_outbox_send();
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 }
 
 void notification_sendNextNotification()
 {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
 	app_message_outbox_send();
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	stopBusyAfterSend = true;
 }
@@ -480,6 +480,8 @@ void notification_gotDismiss(DictionaryIterator *received)
 		break;
 	}
 
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
