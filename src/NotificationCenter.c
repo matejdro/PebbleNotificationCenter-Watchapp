@@ -205,7 +205,7 @@ void comm_failed(DictionaryIterator *received, AppMessageResult reason, void *co
 int main(void) {
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(data_sent);
-	app_message_register_outbox_failed(comm_failed);
+	//app_message_register_outbox_failed(comm_failed);
 	app_message_open(124, 50);
 
 	DictionaryIterator *iterator;
