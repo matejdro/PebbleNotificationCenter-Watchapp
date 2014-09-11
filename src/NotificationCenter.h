@@ -18,6 +18,7 @@ extern uint8_t config_vibrateMode;
 extern bool config_dontClose;
 extern bool config_lightScreen;
 extern bool config_dontVibrateWhenCharging;
+extern bool config_invertColors;
 extern uint8_t config_shakeAction;
 
 void setCurWindow(uint8_t newWindow);

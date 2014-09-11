@@ -19,6 +19,8 @@ TextLayer* quitText;
 
 SimpleMenuLayer* menuLayer;
 
+static InverterLayer* inverterLayer;
+
 char debugErrorText[10];
 
 void show_loading()
@@ -100,6 +102,15 @@ void show_menu()
 	menuLayer = simple_menu_layer_create(GRect(0, 0, 144, 156), menuWindow, mainMenuSection, 1, NULL);
 	layer_add_child(topLayer, (Layer *) menuLayer);
 
+	if (inverterLayer != NULL)
+	{
+		layer_remove_from_parent((Layer*) inverterLayer);
+		inverter_layer_destroy(inverterLayer);
+		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
+		layer_add_child(topLayer, (Layer*) inverterLayer);
+	}
+
+
 	layer_set_hidden((Layer *) menuLoadingLayer, true);
 	layer_set_hidden((Layer *) menuLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
@@ -142,6 +153,9 @@ void window_unload(Window* me)
 	text_layer_destroy(quitTitle);
 	text_layer_destroy(quitText);
 
+	if (inverterLayer != NULL)
+		inverter_layer_destroy(inverterLayer);
+
 	window_destroy(me);
 
 }
@@ -168,6 +182,12 @@ void window_load(Window *me) {
 	text_layer_set_text(quitText, "Quitting...\n Please wait");
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
+
+	if (config_invertColors)
+	{
+		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
+		layer_add_child(topLayer, (Layer*) inverterLayer);
+	}
 }
 
 void menu_appears(Window* window)

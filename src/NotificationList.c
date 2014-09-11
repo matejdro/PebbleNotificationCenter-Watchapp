@@ -19,6 +19,7 @@ uint8_t types[21] = {};
 char dates[21][21] = {};
 
 MenuLayer* listMenuLayer;
+static InverterLayer* inverterLayer;
 
 GBitmap* normalNotification;
 GBitmap* ongoingNotification;
@@ -339,6 +340,12 @@ void list_window_load(Window *me) {
 	menu_layer_set_click_config_onto_window(listMenuLayer, listWindow);
 
 	layer_add_child(topLayer, (Layer*) listMenuLayer);
+
+	if (config_invertColors)
+	{
+		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
+		layer_add_child(topLayer, (Layer*) inverterLayer);
+	}
 }
 
 void list_window_unload(Window *me) {
@@ -346,6 +353,9 @@ void list_window_unload(Window *me) {
 	gbitmap_destroy(ongoingNotification);
 
 	menu_layer_destroy(listMenuLayer);
+
+	if (inverterLayer != NULL)
+		inverter_layer_destroy(inverterLayer);
 
 	window_destroy(me);
 }

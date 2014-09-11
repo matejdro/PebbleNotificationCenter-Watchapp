@@ -20,6 +20,7 @@ bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
+bool config_invertColors;
 uint8_t config_shakeAction;
 
 const char* config_getFontResource(int id)
@@ -121,6 +122,13 @@ void received_config(DictionaryIterator *received)
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_shakeAction = data[10];
 
+	bool newInvertColors = (data[7] & 0x40) != 0;
+	if (newInvertColors != config_invertColors)
+	{
+		persist_write_bool(0, newInvertColors);
+		config_invertColors = newInvertColors;
+	}
+
 	gotConfig = true;
 
 	bool notificationWaiting = (data[7] & 0x08) != 0;
@@ -200,12 +208,14 @@ int main(void) {
 	app_message_register_outbox_failed(comm_failed);
 	app_message_open(124, 50);
 
-	switchWindow(0);
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 0);
 	app_message_outbox_send();
+
+	config_invertColors = persist_read_bool(0);
+
+	switchWindow(0);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);

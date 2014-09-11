@@ -26,6 +26,8 @@ bool closeSent = false;
 
 Window* notifyWindow;
 
+static InverterLayer* inverterLayer;
+
 Layer* statusbar;
 TextLayer* statusClock;
 char clockText[9];
@@ -674,21 +676,30 @@ void notification_load(Window *window)
 	title = text_layer_create(GRect(2, 0, 144 - 4, 18));
 	text_layer_set_font(title, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
 	text_layer_set_overflow_mode(title, GTextOverflowModeWordWrap);
+	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) title);
 
 	subTitle = text_layer_create(GRect(2, 18, 144 - 4, 16));
 	text_layer_set_font(subTitle, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 	text_layer_set_overflow_mode(subTitle, GTextOverflowModeWordWrap);
+	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) subTitle);
 
 	text = text_layer_create(GRect(2, 18 + 16, 144 - 4, 16));
 	text_layer_set_font(text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_overflow_mode(text, GTextOverflowModeWordWrap);
+	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) text);
 
 	text_layer_set_font(title, fonts_get_system_font(config_getFontResource(config_titleFont)));
 	text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(config_subtitleFont)));
 	text_layer_set_font(text, fonts_get_system_font(config_getFontResource(config_bodyFont)));
+
+	if (config_invertColors)
+	{
+		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
+		layer_add_child(topLayer, (Layer*) inverterLayer);
+	}
 
 	if (config_shakeAction > 0)
 		accel_tap_service_subscribe(accelerometer_shake);
@@ -704,6 +715,9 @@ void notification_unload(Window *window)
 	text_layer_destroy(text);
 	scroll_layer_destroy(scroll);
 	gbitmap_destroy(busyIndicator);
+
+	if (inverterLayer != NULL)
+		inverter_layer_destroy(inverterLayer);
 
 	if (config_shakeAction > 0)
 		accel_tap_service_unsubscribe();
