@@ -21,7 +21,10 @@ bool config_showActive;
 bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
 bool config_invertColors;
+bool config_disableNotifications;
 uint8_t config_shakeAction;
+
+bool closingMode = false;
 
 const char* config_getFontResource(int id)
 {
@@ -120,6 +123,8 @@ void received_config(DictionaryIterator *received)
 	config_showActive = (data[7] & 0x04) != 0;
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
+	config_disableNotifications = (data[7] & 0x80) != 0;
+
 	config_shakeAction = data[10];
 
 	bool newInvertColors = (data[7] & 0x40) != 0;
@@ -132,7 +137,7 @@ void received_config(DictionaryIterator *received)
 	gotConfig = true;
 
 	bool notificationWaiting = (data[7] & 0x08) != 0;
-	if (notificationWaiting || !config_showActive)
+	if (notificationWaiting)
 	{
 		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 		app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
@@ -192,20 +197,9 @@ void data_sent(DictionaryIterator *received, void *context)
 	}
 }
 
-void comm_failed(DictionaryIterator *received, AppMessageResult reason, void *context)
-{
-	switch (curWindow)
-	{
-	case 0:
-		menu_comm_failed(received, reason, context);
-		break;
-	}
-}
-
 int main(void) {
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(data_sent);
-	//app_message_register_outbox_failed(comm_failed);
 	app_message_open(124, 50);
 
 	DictionaryIterator *iterator;

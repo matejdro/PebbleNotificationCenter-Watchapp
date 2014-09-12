@@ -6,8 +6,9 @@
 
 Window* menuWindow;
 
-SimpleMenuItem mainMenuItems[2] = {};
-SimpleMenuSection mainMenuSection[1] = {};
+SimpleMenuItem notificationSectionItems[2] = {};
+SimpleMenuItem settingsSectionItems[1] = {};
+SimpleMenuSection mainMenuSections[2] = {};
 
 GBitmap* currentIcon;
 GBitmap* historyIcon;
@@ -21,7 +22,7 @@ SimpleMenuLayer* menuLayer;
 
 static InverterLayer* inverterLayer;
 
-char debugErrorText[10];
+bool menuLoaded = false;
 
 void show_loading()
 {
@@ -60,19 +61,55 @@ void show_quit()
 	layer_set_hidden((Layer *) quitText, false);
 }
 
-void menu_comm_failed(DictionaryIterator *received, AppMessageResult reason, void *context)
+void reload_menu()
 {
-	snprintf(debugErrorText, 10, "ERROR %d", (uint8_t) reason);
-	text_layer_set_text(quitText, debugErrorText);
-	text_layer_set_text(menuLoadingLayer, debugErrorText);
+	Layer* topLayer = window_get_root_layer(menuWindow);
+
+
+	if (menuLayer != NULL)
+	{
+		layer_remove_from_parent((Layer *) menuLayer);
+		simple_menu_layer_destroy(menuLayer);
+	}
+
+	menuLayer = simple_menu_layer_create(GRect(0, 0, 144, 152), menuWindow, mainMenuSections, 2, NULL);
+
+	layer_add_child(topLayer, (Layer *) menuLayer);
+
+	if (inverterLayer != NULL)
+	{
+		layer_remove_from_parent((Layer*) inverterLayer);
+		inverter_layer_destroy(inverterLayer);
+		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
+		layer_add_child(topLayer, (Layer*) inverterLayer);
+	}
 }
 
-void menu_picked(int index, void* context)
+void update_notifications_enabled_setting()
+{
+	if (config_disableNotifications)
+	{
+		settingsSectionItems[0].title = "Notifications OFF";
+		settingsSectionItems[0].subtitle = "Press to enable";
+	}
+	else
+	{
+		settingsSectionItems[0].title = "Notifications ON";
+		settingsSectionItems[0].subtitle = "Press to disable";
+	}
+
+}
+
+
+void notifications_picked(int index, void* context)
 {
 	show_loading();
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
+
+	if (index == 0 && !config_showActive)
+		index = 1;
 
 	dict_write_uint8(iterator, 0, 6);
 	dict_write_uint8(iterator, 1, index);
@@ -83,41 +120,61 @@ void menu_picked(int index, void* context)
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 }
 
+void settings_picked(int index, void* context)
+{
+	if (index == 0)
+	{
+		config_disableNotifications = !config_disableNotifications;
+		update_notifications_enabled_setting();
+		menu_layer_reload_data((MenuLayer*) menuLayer);
+
+		DictionaryIterator *iterator;
+		app_message_outbox_begin(&iterator);
+
+		dict_write_uint8(iterator, 0, 11);
+		dict_write_uint8(iterator, 1, 0);
+		dict_write_uint8(iterator, 2, config_disableNotifications ? 1 : 0);
+
+		app_message_outbox_send();
+
+		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+		app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+	}
+}
+
 void show_menu()
 {
-	mainMenuSection[0].items = mainMenuItems;
-	mainMenuSection[0].num_items = 2;
+	menuLoaded = true;
+	mainMenuSections[0].title = "Notifications";
+	mainMenuSections[0].items = notificationSectionItems;
+	mainMenuSections[0].num_items = config_showActive ? 2 : 1;
 
-	mainMenuItems[0].title = "Active";
-	mainMenuItems[0].icon = currentIcon;
-	mainMenuItems[0].callback = menu_picked;
+	mainMenuSections[1].title = "Settings";
+	mainMenuSections[1].items = settingsSectionItems;
+	mainMenuSections[1].num_items = 1;
 
-	mainMenuItems[1].title = "History";
-	mainMenuItems[1].icon = historyIcon;
-	mainMenuItems[1].callback = menu_picked;
-
-	Layer* topLayer = window_get_root_layer(menuWindow);
-
-	if (menuLayer != NULL) layer_remove_from_parent((Layer *) menuLayer);
-	menuLayer = simple_menu_layer_create(GRect(0, 0, 144, 156), menuWindow, mainMenuSection, 1, NULL);
-	layer_add_child(topLayer, (Layer *) menuLayer);
-
-	if (inverterLayer != NULL)
+	if (config_showActive)
 	{
-		layer_remove_from_parent((Layer*) inverterLayer);
-		inverter_layer_destroy(inverterLayer);
-		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
-		layer_add_child(topLayer, (Layer*) inverterLayer);
+		notificationSectionItems[0].title = "Active";
+		notificationSectionItems[0].icon = currentIcon;
+		notificationSectionItems[0].callback = notifications_picked;
 	}
 
+	int historyId = config_showActive ? 1 : 0;
+	notificationSectionItems[historyId].title = "History";
+	notificationSectionItems[historyId].icon = historyIcon;
+	notificationSectionItems[historyId].callback = notifications_picked;
+
+	update_notifications_enabled_setting();
+	settingsSectionItems[0].callback = settings_picked;
+
+	reload_menu();
 
 	layer_set_hidden((Layer *) menuLoadingLayer, true);
 	layer_set_hidden((Layer *) menuLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
 }
-
-
 
 void menu_data_received(int packetId, DictionaryIterator* data)
 {
@@ -135,7 +192,7 @@ void menu_data_received(int packetId, DictionaryIterator* data)
 
 		break;
 	case 2:
-		window_stack_pop(true);
+		//window_stack_pop(false);
 		init_notification_list_window();
 		list_data_received(packetId, data);
 
@@ -193,6 +250,8 @@ void window_load(Window *me) {
 void menu_appears(Window* window)
 {
 	setCurWindow(0);
+	if (menuLoaded && !closingMode)
+		show_menu();
 }
 
 void init_menu_window()

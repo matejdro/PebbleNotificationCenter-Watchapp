@@ -1,7 +1,6 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
-#include "MainMenu.h"
 
 typedef struct
 {
@@ -11,7 +10,7 @@ typedef struct
 	uint8_t numOfChunks;
 	char title[31];
 	char subTitle[31];
-	char text[1001];
+	char text[900];
 
 } Notification;
 
@@ -157,6 +156,7 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 	if (numOfNotifications <= 1 && closeAutomatically)
 	{
 		window_stack_pop(true);
+		closingMode = true;
 		return;
 	}
 
@@ -557,6 +557,7 @@ void notification_data_sent(DictionaryIterator *received, void *context)
 	if (closeOnReceive)
 	{
 		window_stack_pop(true);
+		closingMode = true;
 	}
 }
 
@@ -619,7 +620,7 @@ void notification_second_tick()
 {
 	elapsedTime++;
 
-	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime)
+	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime && exitOnClose)
 	{
 		window_stack_pop(true);
 		return;
