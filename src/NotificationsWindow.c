@@ -407,6 +407,18 @@ void notification_newNotification(DictionaryIterator *received)
 		{
 			periodicVibrationPeriod = configBytes[2];
 
+			uint8_t numOfVibrationBytes = configBytes[3];
+			uint32_t segments[20];
+			for (int i = 0; i < numOfVibrationBytes; i+= 2)
+			{
+				segments[i / 2] = configBytes[4 +i] | (configBytes[5 +i] << 8);
+			}
+			VibePattern pat = {
+			.durations = segments,
+			.num_segments = numOfVibrationBytes / 2,
+			};
+			vibes_enqueue_custom_pattern(pat);
+
 //			if (config_vibrateMode > 0 && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
 //			{
 //				if (numOfNotifications == 1 && config_vibrateMode == 1)
