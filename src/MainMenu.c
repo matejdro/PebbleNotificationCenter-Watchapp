@@ -39,7 +39,7 @@ void show_old_watchapp()
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
-	text_layer_set_text(menuLoadingLayer, "Please remove and then re-install Notification Center watch app from Pebble store");
+	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate\nPebble App \n\n Help:\n goo.gl/0e0h9m");
 
 }
 
@@ -50,7 +50,7 @@ void show_old_android()
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
-	text_layer_set_text(menuLoadingLayer, "Please update Notification Center android app");
+	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate\nAndroid App \n\n Help:\n goo.gl/0e0h9m");
 
 }
 
@@ -223,7 +223,7 @@ void window_load(Window *me) {
 
 	Layer* topLayer = window_get_root_layer(menuWindow);
 
-	menuLoadingLayer = text_layer_create(GRect(0, 10, 144, 168 - 16 - 10));
+	menuLoadingLayer = text_layer_create(GRect(0, 0, 144, 168 - 16));
 	text_layer_set_text_alignment(menuLoadingLayer, GTextAlignmentCenter);
 	text_layer_set_text(menuLoadingLayer, "Loading...");
 	text_layer_set_font(menuLoadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
