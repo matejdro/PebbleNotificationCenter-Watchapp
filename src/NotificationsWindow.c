@@ -23,6 +23,8 @@ bool closeOnReceive = false;
 bool exitOnClose = false;
 bool closeSent = false;
 
+uint8_t periodicVibrationPeriod = 0;
+
 Window* notifyWindow;
 
 static InverterLayer* inverterLayer;
@@ -394,6 +396,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 	uint8_t flags = configBytes[1];
 	bool inList = (flags & 0x02) != 0;
+	bool autoSwitch = (flags & 0x04) != 0;
 
 	Notification* notification = notification_find_notification(id);
 	if (notification == NULL)
@@ -402,16 +405,18 @@ void notification_newNotification(DictionaryIterator *received)
 
 		if (!inList)
 		{
-			if (config_vibrateMode > 0 && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
-			{
-				if (numOfNotifications == 1 && config_vibrateMode == 1)
-					vibes_long_pulse();
-				else
-					vibes_short_pulse();
+			periodicVibrationPeriod = configBytes[2];
 
-				vibrating = true;
-				app_timer_register(700, vibration_stopped, NULL);
-			}
+//			if (config_vibrateMode > 0 && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
+//			{
+//				if (numOfNotifications == 1 && config_vibrateMode == 1)
+//					vibes_long_pulse();
+//				else
+//					vibes_short_pulse();
+//
+//				vibrating = true;
+//				app_timer_register(700, vibration_stopped, NULL);
+//			}
 
 			if (config_lightScreen)
 				light_enable_interaction();
@@ -458,7 +463,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 	if (numOfNotifications == 1)
 		refresh_notification();
-	else if (config_autoSwitchNotifications)
+	else if (autoSwitch)
 	{
 		pickedNotification = numOfNotifications - 1;
 		refresh_notification();
@@ -626,7 +631,7 @@ void notification_second_tick()
 		return;
 	}
 
-	if (config_vibratePeriodically > 0 && appIdle && elapsedTime > 0 && elapsedTime % config_vibratePeriodically == 0 && !notificationData[notificationPositions[pickedNotification]].inList && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
+	if (periodicVibrationPeriod > 0 && appIdle && elapsedTime > 0 && elapsedTime % periodicVibrationPeriod == 0 && !notificationData[notificationPositions[pickedNotification]].inList && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging))
 	{
 		vibrating = true;
 		app_timer_register(500, vibration_stopped, NULL);
