@@ -28,5 +28,6 @@ void setCurWindow(uint8_t newWindow);
 void switchWindow(uint8_t newWindow);
 uint8_t getCurWindow();
 const char* config_getFontResource(int id);
+void closeApp();
 
 #endif /* NOTIFICATIONCENTER_H_ */

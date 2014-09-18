@@ -191,6 +191,16 @@ void data_sent(DictionaryIterator *received, void *context)
 	}
 }
 
+void closeApp()
+{
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 7);
+	app_message_outbox_send();
+
+	closingMode = true;
+}
+
 int main(void) {
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(data_sent);

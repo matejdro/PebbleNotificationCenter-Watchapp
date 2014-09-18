@@ -139,14 +139,6 @@ void refresh_notification()
 	layer_mark_dirty(circlesLayer);
 }
 
-void closeApp()
-{
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 7);
-	app_message_outbox_send();
-}
-
 void set_busy_indicator(bool value)
 {
 	busy = value;
@@ -157,8 +149,8 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 {
 	if (numOfNotifications <= 1 && closeAutomatically)
 	{
-		window_stack_pop(true);
 		closingMode = true;
+		window_stack_pop(true);
 		return;
 	}
 
@@ -573,8 +565,8 @@ void notification_data_sent(DictionaryIterator *received, void *context)
 
 	if (closeOnReceive)
 	{
-		window_stack_pop(true);
 		closingMode = true;
+		window_stack_pop(true);
 	}
 }
 

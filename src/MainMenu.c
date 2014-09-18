@@ -247,11 +247,23 @@ void window_load(Window *me) {
 	}
 }
 
+void closing_timer(void* data)
+{
+	closeApp();
+	app_timer_register(5000, closing_timer, NULL);
+}
+
 void menu_appears(Window* window)
 {
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
 		show_menu();
+	else if (closingMode)
+	{
+		text_layer_set_text(quitText, "trigger");
+
+		app_timer_register(5000, closing_timer, NULL);
+	}
 }
 
 void init_menu_window()
