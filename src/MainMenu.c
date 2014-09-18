@@ -260,8 +260,6 @@ void menu_appears(Window* window)
 		show_menu();
 	else if (closingMode)
 	{
-		text_layer_set_text(quitText, "trigger");
-
 		app_timer_register(5000, closing_timer, NULL);
 	}
 }
