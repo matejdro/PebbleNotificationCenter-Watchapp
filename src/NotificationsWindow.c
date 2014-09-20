@@ -41,9 +41,9 @@ GBitmap* busyIndicator;
 uint8_t numOfNotifications = 0;
 uint8_t pickedNotification = 0;
 
-Notification notificationData[8];
-uint8_t notificationPositions[8];
-bool notificationDataUsed[8];
+Notification notificationData[7];
+uint8_t notificationPositions[7];
+bool notificationDataUsed[7];
 
 ScrollLayer* scroll;
 
@@ -174,7 +174,7 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 
 Notification* notification_add_notification()
 {
-	if (numOfNotifications >= 8)
+	if (numOfNotifications >= 7)
 		notification_remove_notification(0, false);
 
 	uint8_t position = 0;
