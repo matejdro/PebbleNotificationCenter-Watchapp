@@ -189,7 +189,6 @@ uint8_t getEmptySpacesUp()
 void requestNotification(uint16_t pos)
 {
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -211,7 +210,6 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 	}
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);

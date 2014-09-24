@@ -1,10 +1,10 @@
 {
   "uuid": "0a7575eb-e5b9-456b-8701-3eacb62d74f1",
   "shortName": "Notifications",
-  "longName": "Notification Center",
+  "longName": "Notification Center Beta",
   "companyName": "matejdro",
-  "versionCode": 12,
-  "versionLabel": "2.2",
+  "versionCode": 13,
+  "versionLabel": "2.3",
   "watchapp": {
     "watchface": false
   },

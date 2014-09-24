@@ -134,7 +134,6 @@ void received_config(DictionaryIterator *received)
 	if (notificationWaiting)
 	{
 		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-		app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 		DictionaryIterator *iterator;
 		app_message_outbox_begin(&iterator);
@@ -178,7 +177,6 @@ void received_data(DictionaryIterator *received, void *context) {
 	}
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 }
 
 void data_sent(DictionaryIterator *received, void *context)
@@ -216,7 +214,6 @@ int main(void) {
 	switchWindow(0);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	app_event_loop();
 
