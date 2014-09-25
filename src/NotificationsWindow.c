@@ -254,6 +254,12 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	if (curNotification == NULL)
 		return;
 
+	if (!curNotification->showActionMenu)
+	{
+		notification_action(curNotification, 0);
+		return;
+	}
+
 	if (actionsMenuDisplayed)
 	{
 		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
@@ -563,6 +569,7 @@ void notification_newNotification(DictionaryIterator *received)
 	notification->id = id;
 	notification->inList = inList;
 	notification->dismissable = (flags & 0x01) != 0;
+	notification->showActionMenu = (flags & 0x08) != 0;
 	notification->numOfChunks = dict_find(received, 4)->value->uint8;
 	notification->numOfActions = configBytes[4 + numOfVibrationBytes];
 	strcpy(notification->title, dict_find(received, 5)->value->cstring);
