@@ -683,7 +683,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 	if (numOfNotifications == 1)
 		refresh_notification();
-	else if (autoSwitch)
+	else if (autoSwitch && !actionsMenuDisplayed)
 	{
 		pickedNotification = numOfNotifications - 1;
 		refresh_notification();
