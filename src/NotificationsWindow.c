@@ -60,6 +60,9 @@ TextLayer* text;
 Layer* menuBackground;
 MenuLayer* actionsMenu;
 bool actionsMenuDisplayed = false;
+bool cannedResponsesDisplayed = false;
+char cannedResponses[20][20];
+uint8_t numOfCannedResponses = 0;
 
 bool stopBusyAfterSend = false;
 
@@ -221,6 +224,22 @@ void notification_action(Notification* notification, int action)
 		notification_remove_notification(pickedNotification, true);
 }
 
+void pickCannedResponse(uint8_t id)
+{
+	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+	if (curNotification == NULL)
+		return;
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 14);
+	dict_write_int32(iterator, 1, curNotification->id);
+	dict_write_uint8(iterator, 2, id);
+	app_message_outbox_send();
+}
+
 static void menu_show()
 {
 	menu_layer_reload_data(actionsMenu);
@@ -235,13 +254,30 @@ static void menu_show()
 static void menu_hide()
 {
 	actionsMenuDisplayed = false;
+	cannedResponsesDisplayed = false;
 	layer_set_hidden((Layer*) menuBackground, true);
+}
+
+static void canned_show()
+{
+	cannedResponsesDisplayed = true;
+	menu_show();
 }
 
 void notification_back_single(ClickRecognizerRef recognizer, void* context)
 {
 	if (actionsMenuDisplayed)
-		menu_hide();
+	{
+		if (cannedResponsesDisplayed)
+		{
+			cannedResponsesDisplayed = false;
+			menu_show();
+		}
+		else
+		{
+			menu_hide();
+		}
+	}
 	else
 		window_stack_pop(true);
 }
@@ -262,7 +298,11 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 	if (actionsMenuDisplayed)
 	{
-		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
+		if (cannedResponsesDisplayed)
+			pickCannedResponse(menu_layer_get_selected_index(actionsMenu).row);
+		else
+			notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
+
 		menu_hide();
 	}
 	else
@@ -429,6 +469,9 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 }
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
+	if (cannedResponsesDisplayed)
+		return numOfCannedResponses;
+
 	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
 	if (curNotification == NULL)
 		return 0;
@@ -449,30 +492,37 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 	char* text;
 	int idAdd = 0;
 
-	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
-	if (curNotification == NULL)
-		return;
-
-	if (curNotification->dismissable)
+	if (cannedResponsesDisplayed)
 	{
-		idAdd = 1;
-		if (cell_index->row == 0)
+		text = cannedResponses[cell_index->row];
+	}
+	else
+	{
+		Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+		if (curNotification == NULL)
+			return;
+
+		if (curNotification->dismissable)
 		{
-			text = "Dismiss on phone";
+			idAdd = 1;
+			if (cell_index->row == 0)
+			{
+				text = "Dismiss on phone";
+			}
 		}
-	}
 
-	if (cell_index->row == 0 + idAdd)
-	{
-		text = "Hide from Pebble";
-	}
-	else if (cell_index->row == 1 + idAdd)
-	{
-		text = "Open on phone";
-	}
-	else if (cell_index->row > 1 + idAdd)
-	{
-		text = curNotification->actionNames[cell_index->row - (idAdd + 2)];
+		if (cell_index->row == 0 + idAdd)
+		{
+			text = "Hide from Pebble";
+		}
+		else if (cell_index->row == 1 + idAdd)
+		{
+			text = "Open on phone";
+		}
+		else if (cell_index->row > 1 + idAdd)
+		{
+			text = curNotification->actionNames[cell_index->row - (idAdd + 2)];
+		}
 	}
 
 	graphics_draw_text(ctx, text, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(5, 0, 144 - 20 - 10, 27), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
@@ -492,6 +542,8 @@ void vibration_stopped(void* data)
 
 void notification_sendMoreText(int32_t id, uint8_t offset)
 {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 1);
@@ -511,6 +563,19 @@ void notification_sendActionNames(int32_t id)
 	app_message_outbox_send();
 }
 
+void notification_requestCannedResponses(int32_t id, uint8_t startIndex)
+{
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 13);
+	dict_write_int32(iterator, 1, id);
+	dict_write_uint8(iterator, 2, startIndex);
+
+	app_message_outbox_send();
+	set_busy_indicator(true);
+}
 
 void notification_sendNextNotification()
 {
@@ -719,6 +784,45 @@ void notification_gotActionNames(DictionaryIterator *received)
 		menu_layer_reload_data(actionsMenu);
 }
 
+void notification_gotCannedResponses(DictionaryIterator *received)
+{
+	int32_t id = dict_find(received, 1)->value->int32;
+
+	Notification* notification = notification_find_notification(id);
+	if (notification == NULL)
+	{
+		return;
+	}
+
+	numOfCannedResponses = dict_find(received, 2)->value->uint8;
+	uint8_t firstId = dict_find(received, 3)->value->uint8;
+	uint8_t* text = dict_find(received, 4)->value->data;
+
+	uint8_t packetSize = numOfCannedResponses - firstId;
+	bool finished = false;
+
+	if (packetSize > 4)
+		packetSize = 4;
+	else
+		finished = true;
+
+	for (int i = 0; i < packetSize; i++)
+	{
+		memcpy(cannedResponses[i + firstId], &text[i*19],  19);
+	}
+
+	if (!finished)
+		notification_requestCannedResponses(id, firstId + 4);
+	else
+		set_busy_indicator(false);
+
+	if (cannedResponsesDisplayed)
+		menu_layer_reload_data(actionsMenu);
+	else
+		canned_show();
+}
+
+
 
 void notification_received_data(uint8_t id, DictionaryIterator *received) {
 	switch (id)
@@ -735,6 +839,10 @@ void notification_received_data(uint8_t id, DictionaryIterator *received) {
 	case 5:
 		notification_gotActionNames(received);
 		break;
+	case 6:
+		notification_gotCannedResponses(received);
+		break;
+
 	}
 
 
