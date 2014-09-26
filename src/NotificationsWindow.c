@@ -924,8 +924,10 @@ void notification_unload(Window *window)
 	text_layer_destroy(title);
 	text_layer_destroy(subTitle);
 	text_layer_destroy(text);
+	text_layer_destroy(statusClock);
 	scroll_layer_destroy(scroll);
 	gbitmap_destroy(busyIndicator);
+	layer_destroy(menuBackground);
 	menu_layer_destroy(actionsMenu);
 
 	if (inverterLayer != NULL)
