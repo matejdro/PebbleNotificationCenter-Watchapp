@@ -7,7 +7,7 @@ typedef struct
 	int32_t id;
 	bool dismissable;
 	bool inList;
-	bool showActionMenu;
+	uint8_t actionMenuMode;
 	uint8_t numOfChunks;
 	uint8_t numOfActions;
 	char title[31];
@@ -290,7 +290,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	if (curNotification == NULL)
 		return;
 
-	if (!curNotification->showActionMenu)
+	if (curNotification->actionMenuMode != 1 && !actionsMenuDisplayed)
 	{
 		notification_action(curNotification, 0);
 		return;
@@ -311,6 +311,19 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	}
 
 	//notification_dismiss_current(curNotification, true);
+}
+
+void notification_center_hold(ClickRecognizerRef recognizer, void* context)
+{
+	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+	if (curNotification == NULL)
+		return;
+
+	if (curNotification->actionMenuMode == 2)
+	{
+		menu_show();
+	}
+
 }
 
 void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
@@ -450,6 +463,8 @@ void registerButtons(void* context) {
 
 	window_raw_click_subscribe(BUTTON_ID_UP, (ClickHandler) notification_up_rawPressed, (ClickHandler) notification_up_rawReleased, NULL);
 	window_raw_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) notification_down_rawPressed, (ClickHandler) notification_down_rawReleased, NULL);
+
+	window_long_click_subscribe(BUTTON_ID_SELECT, 500, (ClickHandler) notification_center_hold, NULL);
 
 	window_single_repeating_click_subscribe(BUTTON_ID_UP, 200, (ClickHandler) notification_up_click_proxy);
 	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 200, (ClickHandler) notification_down_click_proxy);
@@ -634,7 +649,7 @@ void notification_newNotification(DictionaryIterator *received)
 	notification->id = id;
 	notification->inList = inList;
 	notification->dismissable = (flags & 0x01) != 0;
-	notification->showActionMenu = (flags & 0x08) != 0;
+	notification->actionMenuMode = configBytes[5 + numOfVibrationBytes];
 	notification->numOfChunks = dict_find(received, 4)->value->uint8;
 	notification->numOfActions = configBytes[4 + numOfVibrationBytes];
 	strcpy(notification->title, dict_find(received, 5)->value->cstring);
