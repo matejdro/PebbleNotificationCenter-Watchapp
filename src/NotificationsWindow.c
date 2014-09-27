@@ -528,7 +528,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 
 		if (cell_index->row == 0 + idAdd)
 		{
-			text = "Hide from Pebble";
+			text = "Dismiss on Pebbl"; //Typo intentional to get whole word in
 		}
 		else if (cell_index->row == 1 + idAdd)
 		{
