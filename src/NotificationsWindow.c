@@ -331,12 +331,14 @@ void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
 	if (actionsMenuDisplayed)
 	{
 		menu_layer_set_selected_next(actionsMenu, true, MenuRowAlignCenter, true);
-		return;
+	}
+	else
+	{
+		scroll_layer_scroll_up_click_handler(recognizer, scroll);
 	}
 
 	appIdle = false;
 	upPressed = true;
-	scroll_layer_scroll_up_click_handler(recognizer, scroll);
 
 }
 void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
@@ -344,12 +346,14 @@ void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
 	if (actionsMenuDisplayed)
 	{
 		menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
-		return;
+	}
+	else
+	{
+		scroll_layer_scroll_down_click_handler(recognizer, scroll);
 	}
 
 	appIdle = false;
 	downPressed = true;
-	scroll_layer_scroll_down_click_handler(recognizer, scroll);
 }
 void notification_up_rawReleased(ClickRecognizerRef recognizer, void* context)
 {
