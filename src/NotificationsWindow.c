@@ -628,16 +628,21 @@ void notification_newNotification(DictionaryIterator *received)
 			if (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_charging)
 			{
 				periodicVibrationPeriod = configBytes[2];
+				uint16_t totalLength = 0;
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
 					segments[i / 2] = configBytes[4 +i] | (configBytes[5 +i] << 8);
+					totalLength += segments[i / 2];
 				}
 				VibePattern pat = {
 				.durations = segments,
 				.num_segments = numOfVibrationBytes / 2,
 				};
 				vibes_enqueue_custom_pattern(pat);
+
+				vibrating = true;
+				app_timer_register(totalLength, vibration_stopped, NULL);
 			}
 
 			if (config_lightScreen)
