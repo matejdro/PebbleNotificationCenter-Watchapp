@@ -131,7 +131,6 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 {
 	if (numOfNotifications <= 1 && closeAutomatically)
 	{
-		closingMode = true;
 		window_stack_pop(true);
 		return;
 	}
@@ -720,7 +719,6 @@ void notification_gotDismiss(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 1)->value->int32;
 	bool close = dict_find(received, 2) == NULL;
-
 	for (int i = 0; i < numOfNotifications; i++)
 	{
 
@@ -739,15 +737,24 @@ void notification_gotDismiss(DictionaryIterator *received)
 	app_message_outbox_begin(&iterator);
 
 	dict_write_uint8(iterator, 0, 9);
-	if (numOfNotifications < 1 && exitOnClose && close)
+	close = numOfNotifications < 1 && exitOnClose && close;
+	if (close)
+	{
+		dict_write_uint8(iterator, 2, 0);
+		closeSent = true;
+	}
+	else
 	{
 		refresh_notification();
-
-		dict_write_uint8(iterator, 2, 0);
+		set_busy_indicator(true);
+		stopBusyAfterSend = true;
 	}
+
 	app_message_outbox_send();
-	set_busy_indicator(true);
-	stopBusyAfterSend = true;
+
+	if (close)
+		window_stack_pop(true);
+
 }
 
 void notification_gotMoreText(DictionaryIterator *received)
@@ -884,7 +891,6 @@ void notification_data_sent(DictionaryIterator *received, void *context)
 
 	if (closeOnReceive)
 	{
-		closingMode = true;
 		window_stack_pop(true);
 	}
 }
@@ -976,6 +982,8 @@ void notification_appears(Window *window)
 void notification_disappears(Window *window)
 {
 	tick_timer_service_unsubscribe();
+	if (exitOnClose)
+		closingMode = true;
 }
 
 void notification_load(Window *window)
