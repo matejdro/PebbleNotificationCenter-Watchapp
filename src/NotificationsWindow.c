@@ -88,10 +88,6 @@ void refresh_notification()
 		bodyText = notification->text;
 	}
 
-	//	GSize titleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), titleText, fonts_get_system_font(titleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-	//	GSize subtitleSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), subtitleText, fonts_get_system_font(subtitleFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-	//	GSize textSize = graphics_text_layout_get_max_used_size(app_get_current_graphics_context(), bodyText, fonts_get_system_font(textFont), GRect(2, 0, 144 - 4, 30000), GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
-
 	text_layer_set_text(title, titleText);
 	text_layer_set_text(subTitle, subtitleText);
 	text_layer_set_text(text, bodyText);
@@ -745,7 +741,6 @@ void notification_gotDismiss(DictionaryIterator *received)
 	}
 	else
 	{
-		refresh_notification();
 		set_busy_indicator(true);
 		stopBusyAfterSend = true;
 	}
@@ -1011,21 +1006,15 @@ void notification_load(Window *window)
 	layer_add_child(topLayer, (Layer*) scroll);
 
 	title = text_layer_create(GRect(2, 0, 144 - 4, 18));
-	text_layer_set_font(title, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
 	text_layer_set_overflow_mode(title, GTextOverflowModeWordWrap);
-	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) title);
 
 	subTitle = text_layer_create(GRect(2, 18, 144 - 4, 16));
-	text_layer_set_font(subTitle, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
 	text_layer_set_overflow_mode(subTitle, GTextOverflowModeWordWrap);
-	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) subTitle);
 
 	text = text_layer_create(GRect(2, 18 + 16, 144 - 4, 16));
-	text_layer_set_font(text, fonts_get_system_font(FONT_KEY_GOTHIC_14));
 	text_layer_set_overflow_mode(text, GTextOverflowModeWordWrap);
-	text_layer_set_background_color(title, GColorWhite);
 	scroll_layer_add_child(scroll, (Layer*) text);
 
 	text_layer_set_font(title, fonts_get_system_font(config_getFontResource(config_titleFont)));
@@ -1039,13 +1028,14 @@ void notification_load(Window *window)
 
 	actionsMenu = menu_layer_create(GRect(1, 1, 144 - 20, 168 - 36));
 	layer_add_child(menuBackground, (Layer*) actionsMenu);
+
+
 	menu_layer_set_callbacks(actionsMenu, NULL, (MenuLayerCallbacks) {
 		.get_num_sections = menu_get_num_sections_callback,
 		.get_num_rows = menu_get_num_rows_callback,
 		.get_cell_height = menu_get_row_height_callback,
 		.draw_row = menu_draw_row_callback,
 		.select_click = menu_select_callback,
-
 	});
 
 	if (config_invertColors)

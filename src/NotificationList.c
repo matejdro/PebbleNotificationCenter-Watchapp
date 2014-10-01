@@ -13,10 +13,10 @@ int16_t pickedEntry = -1;
 uint8_t pickedMode = 0;
 
 bool ending = false;
-char titles[21][21] = {};
-char subtitles[21][21] = {};
-uint8_t types[21] = {};
-char dates[21][21] = {};
+char titles[10][21] = {};
+char subtitles[10][21] = {};
+uint8_t types[10] = {};
+char dates[10][21] = {};
 
 MenuLayer* listMenuLayer;
 static InverterLayer* inverterLayer;
@@ -27,14 +27,14 @@ GBitmap* ongoingNotification;
 int8_t convertToArrayPos(uint16_t index)
 {
 	int16_t indexDiff = index - centerIndex;
-	if (indexDiff > 10 || indexDiff < -10)
+	if (indexDiff > 5 || indexDiff < -5)
 		return -1;
 
 	int8_t arrayPos = arrayCenterPos + indexDiff;
 	if (arrayPos < 0)
-		arrayPos += 21;
-	if (arrayPos > 20)
-		arrayPos -= 21;
+		arrayPos += 10;
+	if (arrayPos > 9)
+		arrayPos -= 10;
 
 	return arrayPos;
 }
@@ -124,21 +124,21 @@ void shiftArray(int newIndex)
 
 	if (diff > 0)
 	{
-		if (arrayCenterPos > 20)
-			arrayCenterPos -= 21;
+		if (arrayCenterPos > 9)
+			arrayCenterPos -= 10;
 
-		clearIndex = arrayCenterPos - 10;
+		clearIndex = arrayCenterPos - 5;
 		if (clearIndex < 0)
-			clearIndex += 21;
+			clearIndex += 10;
 	}
 	else
 	{
 		if (arrayCenterPos < 0)
-			arrayCenterPos += 21;
+			arrayCenterPos += 10;
 
-		clearIndex = arrayCenterPos + 10;
-		if (clearIndex > 20)
-			clearIndex -= 21;
+		clearIndex = arrayCenterPos + 5;
+		if (clearIndex > 9)
+			clearIndex -= 10;
 	}
 
 	*titles[clearIndex] = 0;
@@ -151,7 +151,7 @@ void shiftArray(int newIndex)
 uint8_t getEmptySpacesDown()
 {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i <= centerIndex + 10; i++)
+	for (int i = centerIndex; i <= centerIndex + 5; i++)
 	{
 		if (i >= numEntries)
 			return 10;
@@ -170,7 +170,7 @@ uint8_t getEmptySpacesDown()
 uint8_t getEmptySpacesUp()
 {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i >= centerIndex - 10; i--)
+	for (int i = centerIndex; i >= centerIndex - 5; i--)
 	{
 		if (i < 0)
 			return 10;
@@ -344,6 +344,15 @@ void list_window_load(Window *me) {
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
+
+	arrayCenterPos = 0;
+		centerIndex = 0;
+		for (int i = 0; i < 10; i++)
+		{
+			*titles[i] = 0;
+			*subtitles[i] = 0;
+			*dates[i] = 0;
+		}
 }
 
 void list_window_unload(Window *me) {

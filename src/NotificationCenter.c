@@ -23,49 +23,30 @@ uint8_t config_shakeAction;
 
 bool closingMode = false;
 
+
+const char* fonts[] = {
+		FONT_KEY_GOTHIC_14,
+		FONT_KEY_GOTHIC_14_BOLD,
+		FONT_KEY_GOTHIC_18,
+		FONT_KEY_GOTHIC_18_BOLD,
+		FONT_KEY_GOTHIC_24,
+		FONT_KEY_GOTHIC_24_BOLD,
+		FONT_KEY_GOTHIC_28,
+		FONT_KEY_GOTHIC_28_BOLD,
+		FONT_KEY_BITHAM_30_BLACK,
+		FONT_KEY_BITHAM_42_BOLD,
+		FONT_KEY_BITHAM_42_LIGHT,
+		FONT_KEY_BITHAM_42_MEDIUM_NUMBERS,
+		FONT_KEY_BITHAM_34_MEDIUM_NUMBERS,
+		FONT_KEY_BITHAM_34_LIGHT_SUBSET,
+		FONT_KEY_BITHAM_18_LIGHT_SUBSET,
+		FONT_KEY_ROBOTO_CONDENSED_21,
+		FONT_KEY_ROBOTO_BOLD_SUBSET_49,
+		FONT_KEY_DROID_SERIF_28_BOLD
+};
 const char* config_getFontResource(int id)
 {
-	switch (id)
-	{
-	case 0:
-		return FONT_KEY_GOTHIC_14;
-	case 1:
-		return FONT_KEY_GOTHIC_14_BOLD;
-	case 2:
-		return FONT_KEY_GOTHIC_18;
-	case 3:
-		return FONT_KEY_GOTHIC_18_BOLD;
-	case 4:
-		return FONT_KEY_GOTHIC_24;
-	case 5:
-		return FONT_KEY_GOTHIC_24_BOLD;
-	case 6:
-		return FONT_KEY_GOTHIC_28;
-	case 7:
-		return FONT_KEY_GOTHIC_28_BOLD;
-	case 8:
-		return FONT_KEY_BITHAM_30_BLACK;
-	case 9:
-		return FONT_KEY_BITHAM_42_BOLD;
-	case 10:
-		return FONT_KEY_BITHAM_42_LIGHT;
-	case 11:
-		return FONT_KEY_BITHAM_42_MEDIUM_NUMBERS;
-	case 12:
-		return FONT_KEY_BITHAM_34_MEDIUM_NUMBERS;
-	case 13:
-		return FONT_KEY_BITHAM_34_LIGHT_SUBSET;
-	case 14:
-		return FONT_KEY_BITHAM_18_LIGHT_SUBSET;
-	case 15:
-		return FONT_KEY_ROBOTO_CONDENSED_21;
-	case 16:
-		return FONT_KEY_ROBOTO_BOLD_SUBSET_49;
-	case 17:
-		return FONT_KEY_DROID_SERIF_28_BOLD;
-	}
-
-	return FONT_KEY_GOTHIC_14;
+	return fonts[id];
 }
 
 uint8_t getCurWindow()
