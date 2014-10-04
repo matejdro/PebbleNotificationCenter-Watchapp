@@ -1,12 +1,14 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
+#include "tertiary_text.h"
 
 typedef struct
 {
 	int32_t id;
 	bool dismissable;
 	bool inList;
+	bool scrollToEnd;
 	uint8_t numOfChunks;
 	char title[31];
 	char subTitle[31];
@@ -70,15 +72,18 @@ void refresh_notification()
 	char* subtitleText = "";
 	char* bodyText = "";
 
+	Notification* notification;
+
 	if (numOfNotifications < 1)
 	{
 		titleText = "No notifications";
 		subtitleText = "";
 		bodyText = "";
+		notification = NULL;
 	}
 	else
 	{
-		Notification* notification = &notificationData[notificationPositions[pickedNotification]];
+		notification = &notificationData[notificationPositions[pickedNotification]];
 		titleText = notification->title;
 		subtitleText = notification->subTitle;
 		bodyText = notification->text;
@@ -105,10 +110,17 @@ void refresh_notification()
 	layer_set_frame((Layer*) subTitle, GRect(2, titleSize.h + 1, 144 - 4, subtitleSize.h));
 	layer_set_frame((Layer*) text, GRect(2, titleSize.h + 1 + subtitleSize.h + 1, 144 - 4, textSize.h));
 
-	scroll_layer_set_content_size(scroll, GSize(144 - 4, titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5));
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
-	scroll_layer_set_content_offset(scroll, GPoint(0, 0), true);
+	int16_t verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5;
 
+	scroll_layer_set_content_size(scroll, GSize(144 - 4, verticalSize));
+
+	int16_t scrollTo = 0;
+
+	if (notification != NULL && notification->scrollToEnd)
+		scrollTo = -verticalSize;
+
+	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), false);
+	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
 
 	layer_mark_dirty(circlesLayer);
 }
@@ -270,6 +282,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 {
+	start_text();
+	return;
+
 	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
 	if (curNotification == NULL)
 		return;
@@ -551,6 +566,7 @@ void notification_newNotification(DictionaryIterator *received)
 	notification->inList = inList;
 	notification->dismissable = (flags & 0x01) != 0;
 	notification->numOfChunks = dict_find(received, 4)->value->uint8;
+	notification->scrollToEnd = (flags & 0x08) != 0;
 	strcpy(notification->title, dict_find(received, 5)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 6)->value->cstring);
 	notification->text[0] = 0;
