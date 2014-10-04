@@ -271,6 +271,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 	if (actionsMenuDisplayed)
 	{
+		if (busy)
+			return;
+
 		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
 		menu_hide();
 	}
@@ -282,6 +285,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 {
+	if (actionsMenuDisplayed)
+		return;
+
 	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
 	if (curNotification == NULL)
 		return;
