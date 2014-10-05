@@ -539,7 +539,9 @@ void notification_newNotification(DictionaryIterator *received)
 		{
 			if (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_plugged)
 			{
-				periodicVibrationPeriod = configBytes[2];
+				if (configBytes[2] < periodicVibrationPeriod || periodicVibrationPeriod == 0)
+					periodicVibrationPeriod = configBytes[2];
+
 				uint16_t totalLength = 0;
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
