@@ -12,6 +12,7 @@ extern uint8_t config_titleFont;
 extern uint8_t config_subtitleFont;
 extern uint8_t config_bodyFont;
 extern uint16_t config_timeout;
+extern uint16_t config_periodicTimeout;
 extern uint8_t config_vibratePeriodically;
 extern bool config_autoSwitchNotifications;
 extern uint8_t config_vibrateMode;

@@ -13,6 +13,7 @@ uint8_t config_titleFont;
 uint8_t config_subtitleFont;
 uint8_t config_bodyFont;
 uint16_t config_timeout;
+uint16_t config_periodicTimeout;
 bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
@@ -101,6 +102,7 @@ void received_config(DictionaryIterator *received)
 	config_disableNotifications = (data[7] & 0x80) != 0;
 
 	config_shakeAction = data[10];
+	config_periodicTimeout  = (data[11] << 8) | (data[12]);
 
 	bool newInvertColors = (data[7] & 0x40) != 0;
 	if (newInvertColors != config_invertColors)
