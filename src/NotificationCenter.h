@@ -23,7 +23,9 @@ extern bool config_dontVibrateWhenCharging;
 extern bool config_invertColors;
 extern bool config_disableNotifications;
 extern uint8_t config_shakeAction;
+
 extern bool closingMode;
+extern bool loadingMode;
 
 void setCurWindow(uint8_t newWindow);
 void switchWindow(uint8_t newWindow);

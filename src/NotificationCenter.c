@@ -23,6 +23,7 @@ bool config_disableNotifications;
 uint8_t config_shakeAction;
 
 bool closingMode = false;
+bool loadingMode = false;
 
 
 const char* fonts[] = {
@@ -131,7 +132,12 @@ void received_config(DictionaryIterator *received)
 }
 
 void received_data(DictionaryIterator *received, void *context) {
+	loadingMode = false;
+
 	uint8_t packetId = dict_find(received, 0)->value->uint8;
+
+	snprintf(debugText, 15, "packet %d", packetId);
+	update_debug();
 
 	if (packetId == 3)
 	{
@@ -141,7 +147,7 @@ void received_data(DictionaryIterator *received, void *context) {
 	else if (!gotConfig)
 		return;
 
-	if (packetId == 0 && curWindow > 1)
+	if ((packetId == 0 || packetId == 4) && curWindow > 1)
 	{
 		switchWindow(1);
 	}
@@ -191,6 +197,7 @@ int main(void) {
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 0);
 	app_message_outbox_send();
+	loadingMode = true;
 
 	config_invertColors = persist_read_bool(0);
 
