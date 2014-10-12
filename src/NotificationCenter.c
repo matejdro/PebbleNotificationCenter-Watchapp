@@ -132,8 +132,6 @@ void received_config(DictionaryIterator *received)
 }
 
 void received_data(DictionaryIterator *received, void *context) {
-	loadingMode = false;
-
 	uint8_t packetId = dict_find(received, 0)->value->uint8;
 
 	snprintf(debugText, 15, "packet %d", packetId);
@@ -146,6 +144,8 @@ void received_data(DictionaryIterator *received, void *context) {
 	}
 	else if (!gotConfig)
 		return;
+
+	loadingMode = false;
 
 	if ((packetId == 0 || packetId == 4) && curWindow > 1)
 	{
