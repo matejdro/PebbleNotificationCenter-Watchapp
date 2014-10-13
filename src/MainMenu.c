@@ -36,8 +36,8 @@ void show_loading()
 
 void update_debug()
 {
-	layer_set_hidden((Layer *) quitTitle, false);
-	text_layer_set_text(quitTitle, debugText);
+	//layer_set_hidden((Layer *) quitTitle, false);
+	//text_layer_set_text(quitTitle, debugText);
 }
 
 void show_old_watchapp()
