@@ -113,6 +113,7 @@ void received_config(DictionaryIterator *received)
 	}
 
 	gotConfig = true;
+	loadingMode = false;
 
 	bool notificationWaiting = (data[7] & 0x08) != 0;
 	if (notificationWaiting)
@@ -144,8 +145,6 @@ void received_data(DictionaryIterator *received, void *context) {
 	}
 	else if (!gotConfig)
 		return;
-
-	loadingMode = false;
 
 	if ((packetId == 0 || packetId == 4) && curWindow > 1)
 	{
