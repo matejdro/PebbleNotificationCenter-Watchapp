@@ -285,6 +285,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 {
+	start_text();
+	return;
+
 	if (actionsMenuDisplayed)
 		return;
 

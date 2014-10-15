@@ -24,20 +24,12 @@ static InverterLayer* inverterLayer;
 
 bool menuLoaded = false;
 
-char debugText[15];
-
 void show_loading()
 {
 	layer_set_hidden((Layer *) menuLoadingLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
-}
-
-void update_debug()
-{
-	//layer_set_hidden((Layer *) quitTitle, false);
-	//text_layer_set_text(quitTitle, debugText);
 }
 
 void show_old_watchapp()
@@ -261,14 +253,8 @@ void closing_timer(void* data)
 
 void loading_timer(void* data)
 {
-	static int counter = 0;
-
 	if (!loadingMode)
 		return;
-
-	snprintf(debugText, 15, "wait %d", counter);
-	update_debug();
-	counter =  counter + 1;
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);

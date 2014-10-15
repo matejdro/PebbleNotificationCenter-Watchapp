@@ -25,7 +25,6 @@ uint8_t config_shakeAction;
 bool closingMode = false;
 bool loadingMode = false;
 
-
 const char* fonts[] = {
 		FONT_KEY_GOTHIC_14,
 		FONT_KEY_GOTHIC_14_BOLD,
@@ -134,9 +133,6 @@ void received_config(DictionaryIterator *received)
 
 void received_data(DictionaryIterator *received, void *context) {
 	uint8_t packetId = dict_find(received, 0)->value->uint8;
-
-	snprintf(debugText, 15, "packet %d", packetId);
-	update_debug();
 
 	if (packetId == 3)
 	{
