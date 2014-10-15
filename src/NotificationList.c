@@ -2,9 +2,11 @@
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
 
+#define LIST_STORAGE_SIZE 10
+
 Window* listWindow;
 
-uint16_t numEntries = 10;
+uint16_t numEntries = 0;
 
 int8_t arrayCenterPos = 0;
 int16_t centerIndex = 0;
@@ -13,10 +15,10 @@ int16_t pickedEntry = -1;
 uint8_t pickedMode = 0;
 
 bool ending = false;
-char titles[10][21] = {};
-char subtitles[10][21] = {};
-uint8_t types[10] = {};
-char dates[10][21] = {};
+char** titles;
+char** subtitles;
+uint8_t* types;
+char** dates;
 
 MenuLayer* listMenuLayer;
 static InverterLayer* inverterLayer;
@@ -27,14 +29,14 @@ GBitmap* ongoingNotification;
 int8_t convertToArrayPos(uint16_t index)
 {
 	int16_t indexDiff = index - centerIndex;
-	if (indexDiff > 5 || indexDiff < -5)
+	if (indexDiff > LIST_STORAGE_SIZE / 2 || indexDiff < -LIST_STORAGE_SIZE / 2)
 		return -1;
 
 	int8_t arrayPos = arrayCenterPos + indexDiff;
 	if (arrayPos < 0)
-		arrayPos += 10;
-	if (arrayPos > 9)
-		arrayPos -= 10;
+		arrayPos += LIST_STORAGE_SIZE;
+	if (arrayPos > LIST_STORAGE_SIZE - 1)
+		arrayPos -= LIST_STORAGE_SIZE;
 
 	return arrayPos;
 }
@@ -124,21 +126,21 @@ void shiftArray(int newIndex)
 
 	if (diff > 0)
 	{
-		if (arrayCenterPos > 9)
-			arrayCenterPos -= 10;
+		if (arrayCenterPos > LIST_STORAGE_SIZE - 1)
+			arrayCenterPos -= LIST_STORAGE_SIZE;
 
-		clearIndex = arrayCenterPos - 5;
+		clearIndex = arrayCenterPos - LIST_STORAGE_SIZE / 2;
 		if (clearIndex < 0)
-			clearIndex += 10;
+			clearIndex += LIST_STORAGE_SIZE;
 	}
 	else
 	{
 		if (arrayCenterPos < 0)
-			arrayCenterPos += 10;
+			arrayCenterPos += LIST_STORAGE_SIZE;
 
-		clearIndex = arrayCenterPos + 5;
-		if (clearIndex > 9)
-			clearIndex -= 10;
+		clearIndex = arrayCenterPos + LIST_STORAGE_SIZE / 2;
+		if (clearIndex > LIST_STORAGE_SIZE - 1)
+			clearIndex -= LIST_STORAGE_SIZE;
 	}
 
 	*titles[clearIndex] = 0;
@@ -151,10 +153,10 @@ void shiftArray(int newIndex)
 uint8_t getEmptySpacesDown()
 {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i <= centerIndex + 5; i++)
+	for (int i = centerIndex; i <= centerIndex + LIST_STORAGE_SIZE / 2; i++)
 	{
 		if (i >= numEntries)
-			return 10;
+			return LIST_STORAGE_SIZE;
 
 		if (*getTitle(i) == 0)
 		{
@@ -170,10 +172,10 @@ uint8_t getEmptySpacesDown()
 uint8_t getEmptySpacesUp()
 {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i >= centerIndex - 5; i--)
+	for (int i = centerIndex; i >= centerIndex - LIST_STORAGE_SIZE / 2; i--)
 	{
 		if (i < 0)
-			return 10;
+			return LIST_STORAGE_SIZE;
 
 		if (*getTitle(i) == 0)
 		{
@@ -184,6 +186,40 @@ uint8_t getEmptySpacesUp()
 	}
 
 	return spaces;
+}
+
+void allocateData()
+{
+	titles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
+	subtitles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
+	dates = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
+	types = malloc(sizeof(uint8_t) * LIST_STORAGE_SIZE);
+
+	for (int i = 0; i < LIST_STORAGE_SIZE; i++)
+	{
+		titles[i] = malloc(sizeof(char) * 21);
+		subtitles[i] = malloc(sizeof(char) * 21);
+		dates[i] = malloc(sizeof(char) * 21);
+
+		*titles[i] = 0;
+		*subtitles[i] = 0;
+		*dates[i] = 0;
+	}
+}
+
+void freeData()
+{
+	for (int i = 0; i < LIST_STORAGE_SIZE; i++)
+	{
+		free(titles[i]);
+		free(subtitles[i]);
+		free(dates[i]);
+	}
+
+	free(titles);
+	free(subtitles);
+	free(dates);
+	free(types);
 }
 
 void requestNotification(uint16_t pos)
@@ -346,13 +382,7 @@ void list_window_load(Window *me) {
 	}
 
 	arrayCenterPos = 0;
-		centerIndex = 0;
-		for (int i = 0; i < 10; i++)
-		{
-			*titles[i] = 0;
-			*subtitles[i] = 0;
-			*dates[i] = 0;
-		}
+	centerIndex = 0;
 }
 
 void list_window_unload(Window *me) {
@@ -369,11 +399,19 @@ void list_window_unload(Window *me) {
 
 void list_window_appear(Window* me)
 {
+	allocateData();
 	setCurWindow(2);
 
 	ending = false;
 	pickedEntry = -1;
 	pickedMode = 0;
+
+	requestAdditionalEntries();
+}
+
+void list_window_disappear(Window* me)
+{
+	freeData();
 }
 
 void init_notification_list_window()
@@ -382,8 +420,10 @@ void init_notification_list_window()
 
 	window_set_window_handlers(listWindow, (WindowHandlers){
 		.appear = list_window_appear,
+	    .disappear = list_window_disappear,
 		.load = list_window_load,
 		.unload = list_window_unload
+
 
 	});
 
