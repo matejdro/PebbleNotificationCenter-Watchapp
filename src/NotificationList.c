@@ -383,6 +383,7 @@ void list_window_load(Window *me) {
 
 	arrayCenterPos = 0;
 	centerIndex = 0;
+	allocateData();
 }
 
 void list_window_unload(Window *me) {
@@ -395,11 +396,11 @@ void list_window_unload(Window *me) {
 		inverter_layer_destroy(inverterLayer);
 
 	window_destroy(me);
+	freeData();
 }
 
 void list_window_appear(Window* me)
 {
-	allocateData();
 	setCurWindow(2);
 
 	ending = false;
@@ -409,18 +410,12 @@ void list_window_appear(Window* me)
 	requestAdditionalEntries();
 }
 
-void list_window_disappear(Window* me)
-{
-	freeData();
-}
-
 void init_notification_list_window()
 {
 	listWindow = window_create();
 
 	window_set_window_handlers(listWindow, (WindowHandlers){
 		.appear = list_window_appear,
-	    .disappear = list_window_disappear,
 		.load = list_window_load,
 		.unload = list_window_unload
 
