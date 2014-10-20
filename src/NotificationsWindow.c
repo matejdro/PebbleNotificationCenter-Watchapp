@@ -250,6 +250,17 @@ void notification_sendSelectAction(int32_t notificationId, bool hold)
 	stopBusyAfterSend = true;
 }
 
+void notification_dismiss(int32_t notificationId)
+{
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 14);
+	dict_write_int32(iterator, 1, notificationId);
+	app_message_outbox_send();
+}
+
 void notification_back_single(ClickRecognizerRef recognizer, void* context)
 {
 	if (actionsMenuDisplayed)
@@ -805,7 +816,13 @@ void accelerometer_shake(AccelAxisType axis, int32_t direction)
 	if (config_shakeAction == 1)
 		appIdle = false;
 	else if (config_shakeAction == 2)
-		notification_center_single(NULL, NULL);
+	{
+		Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+		if (curNotification == NULL)
+			return;
+
+		notification_dismiss(curNotification->id);
+	}
 }
 
 
