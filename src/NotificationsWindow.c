@@ -769,15 +769,15 @@ void circles_paint(Layer *layer, GContext *ctx)
 	graphics_context_set_stroke_color(ctx, GColorWhite);
 	graphics_context_set_fill_color(ctx, GColorWhite);
 
-	int x = 7;
+	int x = 9;
 	for (int i = 0; i < numOfNotifications; i++)
 	{
 		if (pickedNotification == i)
-			graphics_fill_circle(ctx, GPoint(x, 8), 3);
+			graphics_fill_circle(ctx, GPoint(x, 8), 4);
 		else
-			graphics_draw_circle(ctx, GPoint(x, 8), 3);
+			graphics_draw_circle(ctx, GPoint(x, 8), 4);
 
-		x += 9;
+		x += 11;
 	}
 }
 
