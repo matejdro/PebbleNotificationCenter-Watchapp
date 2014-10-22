@@ -234,6 +234,30 @@ static void menu_hide()
 	actions_init();
 }
 
+static void menu_up()
+{
+	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
+	if (index.row == 0)
+	{
+		menu_layer_set_selected_index(actionsMenu, MenuIndex(0,numOfActions - 1), MenuRowAlignCenter, true);
+		return;
+	}
+
+	menu_layer_set_selected_next(actionsMenu, true, MenuRowAlignCenter, true);
+}
+
+static void menu_down()
+{
+	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
+	if (index.row == numOfActions - 1)
+	{
+		menu_layer_set_selected_index(actionsMenu, MenuIndex(0, 0), MenuRowAlignCenter, true);
+		return;
+	}
+
+	menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
+}
+
 void notification_sendSelectAction(int32_t notificationId, bool hold)
 {
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
@@ -309,7 +333,7 @@ void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
 {
 	if (actionsMenuDisplayed)
 	{
-		menu_layer_set_selected_next(actionsMenu, true, MenuRowAlignCenter, true);
+		menu_up();
 	}
 	else
 	{
@@ -324,7 +348,7 @@ void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
 {
 	if (actionsMenuDisplayed)
 	{
-		menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
+		menu_down();
 	}
 	else
 	{
@@ -348,7 +372,7 @@ void notification_up_click_proxy(ClickRecognizerRef recognizer, void* context)
 	{
 		if (actionsMenuDisplayed)
 		{
-			menu_layer_set_selected_next(actionsMenu, true, MenuRowAlignCenter, true);
+			menu_up();
 			return;
 		}
 
@@ -361,7 +385,7 @@ void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 	{
 		if (actionsMenuDisplayed)
 		{
-			menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
+			menu_down();
 			return;
 		}
 
