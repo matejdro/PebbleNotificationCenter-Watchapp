@@ -106,8 +106,8 @@ void refresh_notification()
 
 	text_layer_set_size(title, titleSize);
 
-	layer_set_frame((Layer*) subTitle, GRect(2, titleSize.h + 1, 144 - 4, subtitleSize.h));
-	layer_set_frame((Layer*) text, GRect(2, titleSize.h + 1 + subtitleSize.h + 1, 144 - 4, textSize.h));
+	layer_set_frame((Layer*) subTitle, GRect(3, titleSize.h + 1, 144 - 6, subtitleSize.h));
+	layer_set_frame((Layer*) text, GRect(3, titleSize.h + 1 + subtitleSize.h + 1, 144 - 6, textSize.h));
 
 	int16_t verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5;
 
