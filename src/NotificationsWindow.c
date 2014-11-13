@@ -473,8 +473,8 @@ void registerButtons(void* context) {
 
 	window_long_click_subscribe(BUTTON_ID_SELECT, 500, (ClickHandler) notification_center_hold, NULL);
 
-	window_single_repeating_click_subscribe(BUTTON_ID_UP, 200, (ClickHandler) notification_up_click_proxy);
-	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 200, (ClickHandler) notification_down_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_UP, 50, (ClickHandler) notification_up_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 50, (ClickHandler) notification_down_click_proxy);
 }
 
 static void menu_paint_background(Layer *layer, GContext *ctx)
@@ -576,21 +576,28 @@ void notification_newNotification(DictionaryIterator *received)
 				if (configBytes[2] < periodicVibrationPeriod || periodicVibrationPeriod == 0)
 					periodicVibrationPeriod = configBytes[2];
 
+				bool vibrate = false;
+
 				uint16_t totalLength = 0;
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
 					segments[i / 2] = configBytes[4 +i] | (configBytes[5 +i] << 8);
 					totalLength += segments[i / 2];
+					if (i % 4 == 0 && segments[i / 2] > 0)
+						vibrate = true;
 				}
-				VibePattern pat = {
-				.durations = segments,
-				.num_segments = numOfVibrationBytes / 2,
-				};
-				vibes_enqueue_custom_pattern(pat);
+				if (vibrate)
+				{
+					VibePattern pat = {
+					.durations = segments,
+					.num_segments = numOfVibrationBytes / 2,
+					};
+					vibes_enqueue_custom_pattern(pat);
 
-				vibrating = true;
-				app_timer_register(totalLength, vibration_stopped, NULL);
+					vibrating = true;
+					app_timer_register(totalLength, vibration_stopped, NULL);
+				}
 			}
 
 			if (config_lightScreen)
