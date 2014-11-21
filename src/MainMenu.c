@@ -32,25 +32,28 @@ void show_loading()
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 }
 
-void show_old_watchapp()
+void show_update_dialog()
 {
 	layer_set_hidden((Layer *) menuLoadingLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
-	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate\nPebble App \n\n Help:\n goo.gl/0e0h9m");
+	text_layer_set_font(menuLoadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+}
+
+void show_old_watchapp()
+{
+	show_update_dialog();
+	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate Pebble App \n\n Open link:\n www.goo.gl/0e0h9m");
 
 }
 
 void show_old_android()
 {
-	layer_set_hidden((Layer *) menuLoadingLayer, false);
-	layer_set_hidden((Layer *) quitTitle, true);
-	layer_set_hidden((Layer *) quitText, true);
-	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
+	show_update_dialog();
 
-	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate\nAndroid App \n\n Help:\n goo.gl/0e0h9m");
+	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate Android App \n\n Open link:\n www.goo.gl/0e0h9m");
 
 }
 
