@@ -22,6 +22,7 @@ extern bool config_lightScreen;
 extern bool config_dontVibrateWhenCharging;
 extern bool config_invertColors;
 extern bool config_disableNotifications;
+extern bool config_disableVibration;
 extern uint8_t config_shakeAction;
 
 extern bool closingMode;
@@ -32,5 +33,6 @@ void switchWindow(uint8_t newWindow);
 uint8_t getCurWindow();
 const char* config_getFontResource(int id);
 void closeApp();
+bool canVibrate();
 
 #endif /* NOTIFICATIONCENTER_H_ */

@@ -571,7 +571,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 		if (!inList)
 		{
-			if (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_plugged)
+			if (canVibrate())
 			{
 				if (configBytes[2] < periodicVibrationPeriod || periodicVibrationPeriod == 0)
 					periodicVibrationPeriod = configBytes[2];
@@ -871,7 +871,7 @@ void notification_second_tick()
 		appIdle &&
 		elapsedTime > 0 && elapsedTime % periodicVibrationPeriod == 0 &&
 		!notificationData[notificationPositions[pickedNotification]].inList &&
-		(!config_dontVibrateWhenCharging || !battery_state_service_peek().is_plugged) &&
+		canVibrate() &&
 		(config_periodicTimeout == 0 || elapsedTime < config_periodicTimeout))
 	{
 		vibrating = true;

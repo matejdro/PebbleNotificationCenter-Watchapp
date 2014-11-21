@@ -4,7 +4,7 @@
 #include "MainMenu.h"
 #include "NotificationList.h"
 
-static const uint16_t PROTOCOL_VERSION = 18;
+static const uint16_t PROTOCOL_VERSION = 19;
 
 uint8_t curWindow = 0;
 bool gotConfig = false;
@@ -20,6 +20,7 @@ bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
 bool config_invertColors;
 bool config_disableNotifications;
+bool config_disableVibration;
 uint8_t config_shakeAction;
 
 bool closingMode = false;
@@ -45,9 +46,15 @@ const char* fonts[] = {
 		FONT_KEY_ROBOTO_BOLD_SUBSET_49,
 		FONT_KEY_DROID_SERIF_28_BOLD
 };
+
 const char* config_getFontResource(int id)
 {
 	return fonts[id];
+}
+
+bool canVibrate()
+{
+	return !config_disableVibration && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_plugged);
 }
 
 uint8_t getCurWindow()
@@ -100,6 +107,7 @@ void received_config(DictionaryIterator *received)
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_disableNotifications = (data[7] & 0x80) != 0;
+	config_disableVibration = (data[7] & 0x01) != 0;
 
 	config_shakeAction = data[10];
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);

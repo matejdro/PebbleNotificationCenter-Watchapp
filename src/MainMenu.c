@@ -7,7 +7,7 @@
 Window* menuWindow;
 
 SimpleMenuItem notificationSectionItems[2] = {};
-SimpleMenuItem settingsSectionItems[1] = {};
+SimpleMenuItem settingsSectionItems[2] = {};
 SimpleMenuSection mainMenuSections[2] = {};
 
 GBitmap* currentIcon;
@@ -98,6 +98,18 @@ void update_notifications_enabled_setting()
 		settingsSectionItems[0].subtitle = "Press to disable";
 	}
 
+	if (config_disableVibration)
+	{
+		settingsSectionItems[1].title = "Vibration OFF";
+		settingsSectionItems[1].subtitle = "Press to enable";
+	}
+	else
+	{
+		settingsSectionItems[1].title = "Vibration ON";
+		settingsSectionItems[1].subtitle = "Press to disable";
+	}
+
+
 }
 
 
@@ -121,23 +133,36 @@ void notifications_picked(int index, void* context)
 
 void settings_picked(int index, void* context)
 {
-	if (index == 0)
+	uint8_t sendingIndex = index;
+	uint8_t sendingValue;
+
+	switch (index)
 	{
+	case 0:
 		config_disableNotifications = !config_disableNotifications;
-		update_notifications_enabled_setting();
-		menu_layer_reload_data((MenuLayer*) menuLayer);
-
-		DictionaryIterator *iterator;
-		app_message_outbox_begin(&iterator);
-
-		dict_write_uint8(iterator, 0, 11);
-		dict_write_uint8(iterator, 1, 0);
-		dict_write_uint8(iterator, 2, config_disableNotifications ? 1 : 0);
-
-		app_message_outbox_send();
-
-		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+		sendingValue = config_disableNotifications ? 1 : 0;
+		break;
+	case 1:
+		config_disableVibration = !config_disableVibration;
+		sendingValue = config_disableVibration ? 1 : 0;
+		break;
+	default:
+		return;
 	}
+
+	update_notifications_enabled_setting();
+	menu_layer_reload_data((MenuLayer*) menuLayer);
+
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+
+	dict_write_uint8(iterator, 0, 11);
+	dict_write_uint8(iterator, 1, sendingIndex);
+	dict_write_uint8(iterator, 2, sendingValue);
+
+	app_message_outbox_send();
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 }
 
 void show_menu()
@@ -149,7 +174,7 @@ void show_menu()
 
 	mainMenuSections[1].title = "Settings";
 	mainMenuSections[1].items = settingsSectionItems;
-	mainMenuSections[1].num_items = 1;
+	mainMenuSections[1].num_items = 2;
 
 	if (config_showActive)
 	{
@@ -165,6 +190,7 @@ void show_menu()
 
 	update_notifications_enabled_setting();
 	settingsSectionItems[0].callback = settings_picked;
+	settingsSectionItems[1].callback = settings_picked;
 
 	reload_menu();
 
