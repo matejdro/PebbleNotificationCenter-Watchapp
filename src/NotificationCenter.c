@@ -4,9 +4,9 @@
 #include "MainMenu.h"
 #include "NotificationList.h"
 
-static const uint16_t PROTOCOL_VERSION = 19;
+static const uint16_t PROTOCOL_VERSION = 20;
 
-uint8_t curWindow = 0;
+int8_t curWindow = 0;
 bool gotConfig = false;
 
 uint8_t config_titleFont;
@@ -22,6 +22,7 @@ bool config_invertColors;
 bool config_disableNotifications;
 bool config_disableVibration;
 uint8_t config_shakeAction;
+bool main_noMenu;
 
 bool closingMode = false;
 bool loadingMode = false;
@@ -79,12 +80,16 @@ void switchWindow(uint8_t newWindow)
 		curWindow = 1;
 		notification_window_init(false);
 		break;
+	case 2:
+		curWindow = 2;
+		init_notification_list_window(false);
+		break;
 	}
 }
 
 void received_config(DictionaryIterator *received)
 {
-	uint8_t* data = dict_find(received, 1)->value->data;
+	uint8_t* data = dict_find(received, 2)->value->data;
 
 	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
 	if (supportedVersion > PROTOCOL_VERSION)
@@ -104,6 +109,7 @@ void received_config(DictionaryIterator *received)
 	config_timeout = (data[3] << 8) | (data[4]);
 	config_dontClose = (data[7] & 0x02) != 0;
 	config_showActive = (data[7] & 0x04) != 0;
+	main_noMenu = (data[7] & 0x08) != 0;
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_disableNotifications = (data[7] & 0x80) != 0;
@@ -122,62 +128,45 @@ void received_config(DictionaryIterator *received)
 	gotConfig = true;
 	loadingMode = false;
 
-	bool notificationWaiting = (data[7] & 0x08) != 0;
-	if (notificationWaiting)
-	{
-		app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
-		DictionaryIterator *iterator;
-		app_message_outbox_begin(&iterator);
-		dict_write_uint8(iterator, 0, 10);
-		app_message_outbox_send();
-	}
-	else
-	{
+	if (!main_noMenu)
 		show_menu();
-	}
 
 }
 
 void received_data(DictionaryIterator *received, void *context) {
-	uint8_t packetId = dict_find(received, 0)->value->uint8;
+	uint8_t destModule = dict_find(received, 0)->value->uint8;
+	uint8_t packetId = dict_find(received, 1)->value->uint8;
+	bool autoSwitch = dict_find(received, 999) != NULL;
 
-	if (packetId == 3)
+	if (destModule == 0 && packetId == 0)
 	{
 		received_config(received);
 		return;
 	}
-	else if (!gotConfig)
-		return;
-
-	if ((packetId == 0 || packetId == 4) && curWindow > 1)
+	else if (destModule == 2)
 	{
-		switchWindow(1);
-	}
+		if (curWindow != 2)
+		{
+			if (autoSwitch)
+				switchWindow(2);
+			else
+				return;
+		}
 
-	switch (curWindow)
-	{
-	case 0:
-		menu_data_received(packetId, received);
-		break;
-	case 1:
-		notification_received_data(packetId, received);
-		break;
-	case 2:
 		list_data_received(packetId, received);
-		break;
+
 	}
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-}
-
-void data_sent(DictionaryIterator *received, void *context)
-{
-	switch (curWindow)
+	else
 	{
-	case 1:
-		notification_data_sent(received, context);
-		break;
+		if (curWindow != 1)
+		{
+			if (autoSwitch)
+				switchWindow(1);
+			else
+				return;
+		}
+
+		notification_received_data(destModule, packetId, received);
 	}
 }
 
@@ -185,7 +174,8 @@ void closeApp()
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 7);
+	dict_write_uint8(iterator, 0, 0);
+	dict_write_uint8(iterator, 1, 3);
 	app_message_outbox_send();
 
 	closingMode = true;
@@ -193,12 +183,14 @@ void closeApp()
 
 int main(void) {
 	app_message_register_inbox_received(received_data);
-	app_message_register_outbox_sent(data_sent);
 	app_message_open(124, 50);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 0);
+	dict_write_uint8(iterator, 1, 0);
+	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
+
 	app_message_outbox_send();
 	loadingMode = true;
 

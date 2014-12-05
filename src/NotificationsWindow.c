@@ -1,17 +1,16 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
+#include "MainMenu.h"
 
 typedef struct
 {
 	int32_t id;
-	bool dismissable;
 	bool inList;
 	bool scrollToEnd;
-	uint8_t numOfChunks;
 	char title[31];
 	char subTitle[31];
-	char text[900];
+	char text[901];
 
 } Notification;
 
@@ -21,10 +20,8 @@ bool appIdle = true;
 bool vibrating = false;
 
 bool closeOnReceive = false;
-bool exitOnClose = false;
-bool closeSent = false;
 
-uint8_t periodicVibrationPeriod = 0;
+uint16_t periodicVibrationPeriod = 0;
 
 Window* notifyWindow;
 
@@ -61,15 +58,16 @@ bool actionsMenuDisplayed = false;
 char actions[20][20];
 uint8_t numOfActions = 0;
 
-bool stopBusyAfterSend = false;
+int8_t pickedAction = -1;
+uint8_t selectPressed = 0; //0 = not pressed, 1 = pressed, 2 = hold
 
 void registerButtons(void* context);
 
 void refresh_notification()
 {
-	char* titleText = "";
-	char* subtitleText = "";
-	char* bodyText = "";
+	char* titleText;
+	char* subtitleText;
+	char* bodyText;
 
 	Notification* notification;
 
@@ -99,6 +97,7 @@ void refresh_notification()
 	GSize titleSize = text_layer_get_content_size(title);
 	GSize subtitleSize = text_layer_get_content_size(subTitle);
 	GSize textSize = text_layer_get_content_size(text);
+
 
 	titleSize.h += 3;
 	subtitleSize.h += 3;
@@ -198,14 +197,14 @@ void notification_action(Notification* notification, int action)
 	if (result != APP_MSG_OK)
 		return;
 
-	dict_write_uint8(iterator, 0, 3);
-	dict_write_int32(iterator, 1, notification->id);
+	dict_write_uint8(iterator, 0, 4);
+	dict_write_uint8(iterator, 1, 2);
 	dict_write_uint8(iterator, 2, action);
 
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	set_busy_indicator(true);
-	stopBusyAfterSend = true;
 }
 
 static void actions_init()
@@ -260,18 +259,19 @@ static void menu_down()
 
 void notification_sendSelectAction(int32_t notificationId, bool hold)
 {
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 12);
-	dict_write_int32(iterator, 1, notificationId);
+	dict_write_uint8(iterator, 0, 4);
+	dict_write_uint8(iterator, 1, 0);
+
+	dict_write_int32(iterator, 2, notificationId);
 	if (hold)
-		dict_write_uint8(iterator, 2, 1);
+		dict_write_uint8(iterator, 3, 1);
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	set_busy_indicator(true);
-	stopBusyAfterSend = true;
 }
 
 void notification_dismiss(int32_t notificationId)
@@ -306,13 +306,22 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	if (actionsMenuDisplayed)
 	{
 		if (busy)
+		{
+			pickedAction = menu_layer_get_selected_index(actionsMenu).row;
 			return;
+		}
 
 		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
 		menu_hide();
 	}
 	else
 	{
+		if (busy)
+		{
+			selectPressed = 1;
+			return;
+		}
+
 		notification_sendSelectAction(curNotification->id, false);
 	}
 }
@@ -325,6 +334,12 @@ void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
 	if (curNotification == NULL)
 		return;
+
+	if (busy)
+	{
+		selectPressed = 2;
+		return;
+	}
 
 	notification_sendSelectAction(curNotification->id, true);
 }
@@ -401,14 +416,17 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 	if (pickedNotification == 0)
 	{
 		Notification data = notificationData[notificationPositions[pickedNotification]];
-		if (data.inList)
+		if (data.inList && !busy)
 		{
 			DictionaryIterator *iterator;
 			app_message_outbox_begin(&iterator);
-			dict_write_uint8(iterator, 0, 8);
-			dict_write_int8(iterator, 1, -1);
+			dict_write_uint8(iterator, 0, 2);
+			dict_write_uint8(iterator, 1, 2);
+			dict_write_int8(iterator, 2, -1);
+			app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 			app_message_outbox_send();
 
+			set_busy_indicator(true);
 			return;
 		}
 	}
@@ -435,14 +453,17 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 	if (pickedNotification == numOfNotifications - 1)
 	{
 		Notification data = notificationData[notificationPositions[pickedNotification]];
-		if (data.inList)
+		if (data.inList && !busy)
 		{
 			DictionaryIterator *iterator;
 			app_message_outbox_begin(&iterator);
-			dict_write_uint8(iterator, 0, 8);
-			dict_write_int8(iterator, 1, 1);
+			dict_write_uint8(iterator, 0, 2);
+			dict_write_uint8(iterator, 1, 2);
+			dict_write_int8(iterator, 2, 1);
+			app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 			app_message_outbox_send();
 
+			set_busy_indicator(true);
 			return;
 		}
 	}
@@ -509,60 +530,21 @@ void vibration_stopped(void* data)
 	vibrating = false;
 }
 
-void notification_sendMoreText(int32_t id, uint8_t offset)
-{
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 1);
-	dict_write_int32(iterator, 1, id);
-	dict_write_uint8(iterator, 2, offset);
-	app_message_outbox_send();
-}
-
-
-void notification_requestActionListItems(int8_t startIndex)
-{
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 13);
-	dict_write_int32(iterator, 1, notificationData[notificationPositions[pickedNotification]].id);
-	if (startIndex >= 0)
-		dict_write_int8(iterator, 2, startIndex);
-
-	app_message_outbox_send();
-	set_busy_indicator(true);
-}
-
-
-void notification_sendNextNotification()
-{
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
-
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 2);
-	app_message_outbox_send();
-
-	stopBusyAfterSend = true;
-}
-
 void notification_newNotification(DictionaryIterator *received)
 {
-	set_busy_indicator(true);
+	int32_t id = dict_find(received, 2)->value->int32;
 
-	int32_t id = dict_find(received, 1)->value->int32;
+	uint8_t* configBytes = dict_find(received, 3)->value->data;
 
-	uint8_t* configBytes = dict_find(received, 2)->value->data;
-
-	uint8_t flags = configBytes[1];
+	uint8_t flags = configBytes[0];
 	bool inList = (flags & 0x02) != 0;
 	bool autoSwitch = (flags & 0x04) != 0;
 
 	uint8_t numOfVibrationBytes = configBytes[3];
+
+	uint16_t newPeriodicVibration = configBytes[1] << 8 | configBytes[2];
+	if (newPeriodicVibration < periodicVibrationPeriod || periodicVibrationPeriod == 0)
+		periodicVibrationPeriod = newPeriodicVibration;
 
 	Notification* notification = notification_find_notification(id);
 	if (notification == NULL)
@@ -573,9 +555,6 @@ void notification_newNotification(DictionaryIterator *received)
 		{
 			if (canVibrate())
 			{
-				if (configBytes[2] < periodicVibrationPeriod || periodicVibrationPeriod == 0)
-					periodicVibrationPeriod = configBytes[2];
-
 				bool vibrate = false;
 
 				uint16_t totalLength = 0;
@@ -610,11 +589,9 @@ void notification_newNotification(DictionaryIterator *received)
 
 	notification->id = id;
 	notification->inList = inList;
-	notification->dismissable = (flags & 0x01) != 0;
-	notification->numOfChunks = dict_find(received, 4)->value->uint8;
 	notification->scrollToEnd = (flags & 0x08) != 0;
-	strcpy(notification->title, dict_find(received, 5)->value->cstring);
-	strcpy(notification->subTitle, dict_find(received, 6)->value->cstring);
+	strcpy(notification->title, dict_find(received, 4)->value->cstring);
+	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
 	notification->text[0] = 0;
 
 	if (notification->inList)
@@ -634,15 +611,6 @@ void notification_newNotification(DictionaryIterator *received)
 		}
 	}
 
-	if (notification->numOfChunks == 0)
-	{
-		notification_sendNextNotification();
-	}
-	else
-	{
-		notification_sendMoreText(notification->id, 0);
-	}
-
 
 	if (numOfNotifications == 1)
 		refresh_notification();
@@ -651,73 +619,38 @@ void notification_newNotification(DictionaryIterator *received)
 		pickedNotification = numOfNotifications - 1;
 		refresh_notification();
 	}
+
+	set_busy_indicator(false);
+
 }
 
 void notification_gotDismiss(DictionaryIterator *received)
 {
-	int32_t id = dict_find(received, 1)->value->int32;
-	bool close = dict_find(received, 2) == NULL;
+	int32_t id = dict_find(received, 2)->value->int32;
 	for (int i = 0; i < numOfNotifications; i++)
 	{
-
 		Notification entry = notificationData[notificationPositions[i]];
 		if (entry.id != id)
 			continue;
 
-		notification_remove_notification(i, false);
+		notification_remove_notification(i, true);
+
+		set_busy_indicator(false);
 
 		break;
 	}
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-
-	dict_write_uint8(iterator, 0, 9);
-	close = numOfNotifications < 1 && close;
-	if (close && exitOnClose)
-	{
-		dict_write_uint8(iterator, 2, 0);
-		closeSent = true;
-	}
-	else
-	{
-		set_busy_indicator(true);
-		stopBusyAfterSend = true;
-	}
-
-	app_message_outbox_send();
-
-	if (close)
-		window_stack_pop(true);
-
 }
 
 void notification_gotMoreText(DictionaryIterator *received)
 {
-	int32_t id = dict_find(received, 1)->value->int32;
+	int32_t id = dict_find(received, 2)->value->int32;
 
 	Notification* notification = notification_find_notification(id);
 	if (notification == NULL)
-	{
-		notification_sendNextNotification();
 		return;
-	}
-
-	uint8_t chunk = dict_find(received, 2)->value->uint8;
 
 	uint16_t length = strlen(notification->text);
 	strcpy(notification->text + length, dict_find(received, 3)->value->cstring);
-
-	if (++chunk >= notification->numOfChunks)
-	{
-		notification_sendNextNotification();
-	}
-	else
-	{
-		notification_sendMoreText(id, chunk);
-	}
 
 	if (pickedNotification == numOfNotifications - 1)
 		refresh_notification();
@@ -725,74 +658,59 @@ void notification_gotMoreText(DictionaryIterator *received)
 
 void notification_gotActionListItems(DictionaryIterator *received)
 {
-	numOfActions = dict_find(received, 1)->value->uint8;
-	uint8_t firstId = dict_find(received, 2)->value->uint8;
-	uint8_t* text = dict_find(received,3)->value->data;
+	numOfActions = dict_find(received, 2)->value->uint8;
+	uint8_t firstId = dict_find(received, 3)->value->uint8;
+	uint8_t* text = dict_find(received,4)->value->data;
 
 	uint8_t packetSize = numOfActions - firstId;
-	bool finished = false;
 
 	if (packetSize > 4)
 		packetSize = 4;
-	else
-		finished = true;
 
 	for (int i = 0; i < packetSize; i++)
 	{
 		memcpy(actions[i + firstId], &text[i*19],  19);
 	}
 
-	if (finished)
+	if (pickedAction >= 0)
 	{
-		stopBusyAfterSend = true;
-		notification_requestActionListItems(-1);
+		Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+		notification_action(curNotification, pickedAction);
+		menu_hide();
+		pickedAction = -1;
+		return;
 	}
-	else
-	{
-		notification_requestActionListItems(firstId + 4);
-	}
-
 
 	if (actionsMenuDisplayed)
 		menu_layer_reload_data(actionsMenu);
-	else
+	else if (firstId == 0)
+	{
 		menu_show();
-}
-
-
-
-void notification_received_data(uint8_t id, DictionaryIterator *received) {
-	switch (id)
-	{
-	case 0:
-		notification_newNotification(received);
-		break;
-	case 1:
-		notification_gotMoreText(received);
-		break;
-	case 4:
-		notification_gotDismiss(received);
-		break;
-	case 5:
-		notification_gotActionListItems(received);
-		break;
-
-	}
-
-
-}
-
-void notification_data_sent(DictionaryIterator *received, void *context)
-{
-	if (stopBusyAfterSend)
-	{
-		stopBusyAfterSend = false;
 		set_busy_indicator(false);
 	}
+}
 
-	if (closeOnReceive)
+
+
+void notification_received_data(uint8_t module, uint8_t id, DictionaryIterator *received) {
+	if (module == 0 && id == 1)
 	{
-		window_stack_pop(true);
+		set_busy_indicator(false);
+	}
+	else if (module == 1)
+	{
+		if (id == 0)
+			notification_newNotification(received);
+		else if (id == 1)
+			notification_gotMoreText(received);
+	}
+	else if (module == 3 && id == 0)
+	{
+		notification_gotDismiss(received);
+	}
+	else if (module == 4 && id == 0)
+	{
+		notification_gotActionListItems(received);
 	}
 }
 
@@ -861,7 +779,7 @@ void notification_second_tick()
 {
 	elapsedTime++;
 
-	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime && exitOnClose)
+	if (appIdle && config_timeout > 0 && config_timeout < elapsedTime && main_noMenu)
 	{
 		window_stack_pop(true);
 		return;
@@ -893,8 +811,15 @@ void notification_appears(Window *window)
 
 void notification_disappears(Window *window)
 {
+	setCurWindow(-1);
 	tick_timer_service_unsubscribe();
-	if (exitOnClose)
+
+	if (main_noMenu && config_dontClose)
+	{
+		closeApp();
+	}
+
+	if (main_noMenu)
 		closingMode = true;
 }
 
@@ -985,15 +910,10 @@ void notification_unload(Window *window)
 		accel_tap_service_unsubscribe();
 
 	window_destroy(window);
-
-	if (exitOnClose && !closeSent)
-		closeApp();
 }
 
-void notification_window_init(bool liveNotification)
+void notification_window_init()
 {
-	exitOnClose = liveNotification;
-
 	notifyWindow = window_create();
 
 	window_set_window_handlers(notifyWindow, (WindowHandlers) {
@@ -1015,4 +935,8 @@ void notification_window_init(bool liveNotification)
 	window_set_fullscreen(notifyWindow, true);
 	window_stack_push(notifyWindow, true);
 
+	if (!config_dontClose)
+			close_menu_window();
+	else
+			show_quit();
 }

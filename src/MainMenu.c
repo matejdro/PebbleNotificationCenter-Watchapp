@@ -22,6 +22,7 @@ SimpleMenuLayer* menuLayer;
 
 static InverterLayer* inverterLayer;
 
+bool firstAppear = true;
 bool menuLoaded = false;
 
 void show_loading()
@@ -126,8 +127,9 @@ void notifications_picked(int index, void* context)
 	if (index == 0 && !config_showActive)
 		index = 1;
 
-	dict_write_uint8(iterator, 0, 6);
-	dict_write_uint8(iterator, 1, index);
+	dict_write_uint8(iterator, 0, 0);
+	dict_write_uint8(iterator, 1, 1);
+	dict_write_uint8(iterator, 2, index);
 
 	app_message_outbox_send();
 
@@ -159,9 +161,10 @@ void settings_picked(int index, void* context)
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 
-	dict_write_uint8(iterator, 0, 11);
-	dict_write_uint8(iterator, 1, sendingIndex);
-	dict_write_uint8(iterator, 2, sendingValue);
+	dict_write_uint8(iterator, 0, 0);
+	dict_write_uint8(iterator, 1, 2);
+	dict_write_uint8(iterator, 2, sendingIndex);
+	dict_write_uint8(iterator, 3, sendingValue);
 
 	app_message_outbox_send();
 
@@ -203,31 +206,6 @@ void show_menu()
 	layer_set_hidden((Layer *) quitText, true);
 }
 
-void menu_data_received(int packetId, DictionaryIterator* data)
-{
-
-	switch (packetId)
-	{
-	case 0:
-		notification_window_init(true);
-		notification_received_data(packetId, data);
-
-		if (config_dontClose)
-			show_quit();
-		else
-			window_stack_remove(menuWindow, false);
-
-		break;
-	case 2:
-		//window_stack_pop(false);
-		init_notification_list_window();
-		list_data_received(packetId, data);
-
-		break;
-	}
-
-}
-
 void window_unload(Window* me)
 {
 	gbitmap_destroy(currentIcon);
@@ -241,7 +219,6 @@ void window_unload(Window* me)
 		inverter_layer_destroy(inverterLayer);
 
 	window_destroy(me);
-
 }
 
 void window_load(Window *me) {
@@ -274,27 +251,25 @@ void window_load(Window *me) {
 	}
 }
 
+void close_menu_window()
+{
+	if (menuWindow != NULL)
+	{
+		window_stack_remove(menuWindow, false);
+		//menuWindow = NULL;
+	}
+}
+
 void closing_timer(void* data)
 {
 	closeApp();
 	app_timer_register(5000, closing_timer, NULL);
 }
 
-void loading_timer(void* data)
-{
-	if (!loadingMode)
-		return;
-
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 0);
-	app_message_outbox_send();
-
-	app_timer_register(3000, loading_timer, NULL);
-}
-
 void menu_appears(Window* window)
 {
+	firstAppear = false;
+
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
 		show_menu();
@@ -302,10 +277,6 @@ void menu_appears(Window* window)
 	if (closingMode)
 	{
 		app_timer_register(3000, closing_timer, NULL);
-	}
-	else if (loadingMode)
-	{
-		app_timer_register(3000, loading_timer, NULL);
 	}
 }
 
@@ -316,7 +287,7 @@ void init_menu_window()
 	window_set_window_handlers(menuWindow, (WindowHandlers){
 		.load = window_load,
 		.unload = window_unload,
-		.appear = menu_appears
+		.appear = menu_appears,
 	});
 
 	window_stack_push(menuWindow, true /* Animated */);

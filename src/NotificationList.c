@@ -228,8 +228,9 @@ void requestNotification(uint16_t pos)
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 4);
-	dict_write_uint16(iterator, 1, pos);
+	dict_write_uint8(iterator, 0, 2);
+	dict_write_uint8(iterator, 1, 0);
+	dict_write_uint16(iterator, 2, pos);
 	app_message_outbox_send();
 
 	ending = true;
@@ -249,8 +250,9 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 5);
-	dict_write_int16(iterator, 1, pos);
+	dict_write_uint8(iterator, 0, 2);
+	dict_write_uint8(iterator, 1, 1);
+	dict_write_uint16(iterator, 2, pos);
 	app_message_outbox_send();
 }
 
@@ -322,13 +324,13 @@ void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 
 void receivedEntries(DictionaryIterator* data)
 {
-	uint16_t offset = dict_find(data, 1)->value->uint16;
-	numEntries = dict_find(data, 2)->value->uint16;
+	uint16_t offset = dict_find(data, 2)->value->uint16;
+	numEntries = dict_find(data, 3)->value->uint16;
 
-	setType(offset, dict_find(data, 3)->value->uint8);
-	setTitle(offset, dict_find(data, 4)->value->cstring);
-	setSubtitle(offset, dict_find(data, 5)->value->cstring);
-	setDate(offset, dict_find(data, 6)->value->cstring);
+	setType(offset, dict_find(data, 4)->value->uint8);
+	setTitle(offset, dict_find(data, 5)->value->cstring);
+	setSubtitle(offset, dict_find(data, 6)->value->cstring);
+	setDate(offset, dict_find(data, 7)->value->cstring);
 
 	menu_layer_reload_data(listMenuLayer);
 	ending = false;
@@ -345,7 +347,7 @@ void list_data_received(int packetId, DictionaryIterator* data)
 {
 	switch (packetId)
 	{
-	case 2:
+	case 0:
 		receivedEntries(data);
 		break;
 
@@ -354,6 +356,8 @@ void list_data_received(int packetId, DictionaryIterator* data)
 }
 
 void list_window_load(Window *me) {
+	allocateData();
+
 	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
 
@@ -383,7 +387,6 @@ void list_window_load(Window *me) {
 
 	arrayCenterPos = 0;
 	centerIndex = 0;
-	allocateData();
 }
 
 void list_window_unload(Window *me) {
@@ -424,6 +427,7 @@ void init_notification_list_window()
 
 	window_set_fullscreen(listWindow, false);
 
-	window_stack_push(listWindow, true /* Animated */);
+	window_stack_push(listWindow, false /* Animated */);
+
 }
 
