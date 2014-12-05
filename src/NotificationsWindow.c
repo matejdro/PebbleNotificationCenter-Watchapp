@@ -19,8 +19,6 @@ uint32_t elapsedTime = 0;
 bool appIdle = true;
 bool vibrating = false;
 
-bool closeOnReceive = false;
-
 uint16_t periodicVibrationPeriod = 0;
 
 Window* notifyWindow;
@@ -57,9 +55,6 @@ MenuLayer* actionsMenu;
 bool actionsMenuDisplayed = false;
 char actions[20][20];
 uint8_t numOfActions = 0;
-
-int8_t pickedAction = -1;
-uint8_t selectPressed = 0; //0 = not pressed, 1 = pressed, 2 = hold
 
 void registerButtons(void* context);
 
@@ -306,10 +301,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	if (actionsMenuDisplayed)
 	{
 		if (busy)
-		{
-			pickedAction = menu_layer_get_selected_index(actionsMenu).row;
 			return;
-		}
 
 		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
 		menu_hide();
@@ -317,10 +309,7 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	else
 	{
 		if (busy)
-		{
-			selectPressed = 1;
 			return;
-		}
 
 		notification_sendSelectAction(curNotification->id, false);
 	}
@@ -336,10 +325,7 @@ void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 		return;
 
 	if (busy)
-	{
-		selectPressed = 2;
 		return;
-	}
 
 	notification_sendSelectAction(curNotification->id, true);
 }
@@ -670,15 +656,6 @@ void notification_gotActionListItems(DictionaryIterator *received)
 	for (int i = 0; i < packetSize; i++)
 	{
 		memcpy(actions[i + firstId], &text[i*19],  19);
-	}
-
-	if (pickedAction >= 0)
-	{
-		Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
-		notification_action(curNotification, pickedAction);
-		menu_hide();
-		pickedAction = -1;
-		return;
 	}
 
 	if (actionsMenuDisplayed)
