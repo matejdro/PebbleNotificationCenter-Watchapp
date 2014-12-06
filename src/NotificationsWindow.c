@@ -45,6 +45,8 @@ ScrollLayer* scroll;
 
 bool upPressed = false;
 bool downPressed = false;
+uint8_t skippedUpPresses = 0;
+uint8_t skippedDownPresses = 0;
 
 TextLayer* title;
 TextLayer* subTitle;
@@ -107,15 +109,19 @@ void refresh_notification()
 
 	scroll_layer_set_content_size(scroll, GSize(144 - 4, verticalSize));
 
+	layer_mark_dirty(circlesLayer);
+}
+
+void scroll_to_start()
+{
 	int16_t scrollTo = 0;
 
+	Notification* notification = &notificationData[notificationPositions[pickedNotification]];;
 	if (notification != NULL && notification->scrollToEnd)
-		scrollTo = -verticalSize;
+		scrollTo = -scroll_layer_get_content_size(scroll).h;
 
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), false);
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
-
-	layer_mark_dirty(circlesLayer);
 }
 
 void set_busy_indicator(bool value)
@@ -145,9 +151,18 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 	}
 
 	if (pickedNotification >= numOfNotifications && pickedNotification > 0)
+	{
+		bool refresh = (pickedNotification == id);
+
 		pickedNotification--;
 
-	refresh_notification();
+		if (refresh)
+		{
+			refresh_notification();
+			scroll_to_start();
+		}
+
+	}
 }
 
 Notification* notification_add_notification()
@@ -343,6 +358,7 @@ void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
 
 	appIdle = false;
 	upPressed = true;
+	skippedUpPresses = 0;
 
 }
 void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
@@ -358,6 +374,7 @@ void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
 
 	appIdle = false;
 	downPressed = true;
+	skippedDownPresses = 0;
 }
 void notification_up_rawReleased(ClickRecognizerRef recognizer, void* context)
 {
@@ -377,7 +394,22 @@ void notification_up_click_proxy(ClickRecognizerRef recognizer, void* context)
 			return;
 		}
 
-		scroll_layer_scroll_up_click_handler(recognizer, scroll);
+		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
+		if (skippedUpPresses == 1 )
+		{
+			GSize size = scroll_layer_get_content_size(scroll);
+			GPoint point = scroll_layer_get_content_offset(scroll);
+			point.y += 50;
+			if (point.y < -size.h)
+				point.y = -size.h;
+
+			scroll_layer_set_content_offset(scroll, point, true);
+						skippedUpPresses = 0;
+		}
+		else
+		{
+			skippedUpPresses = 1;
+		}
 	}
 }
 void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
@@ -390,7 +422,23 @@ void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 			return;
 		}
 
-		scroll_layer_scroll_down_click_handler(recognizer, scroll);
+
+		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
+		if (skippedDownPresses == 1 )
+		{
+			GSize size = scroll_layer_get_content_size(scroll);
+			GPoint point = scroll_layer_get_content_offset(scroll);
+			point.y -= 50;
+			if (point.y < -size.h)
+				point.y = -size.h;
+
+			scroll_layer_set_content_offset(scroll, point, true);
+			skippedDownPresses = 0;
+		}
+		else
+		{
+			skippedDownPresses = 1;
+		}
 	}
 }
 
@@ -429,6 +477,7 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 		pickedNotification--;
 
 	refresh_notification();
+	scroll_to_start();
 }
 
 void notification_down_double(ClickRecognizerRef recognizer, void* context)
@@ -466,6 +515,7 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 		pickedNotification++;
 
 	refresh_notification();
+	scroll_to_start();
 }
 
 void registerButtons(void* context) {
@@ -599,11 +649,15 @@ void notification_newNotification(DictionaryIterator *received)
 
 
 	if (numOfNotifications == 1)
+	{
 		refresh_notification();
+		scroll_to_start();
+	}
 	else if (autoSwitch && !actionsMenuDisplayed)
 	{
 		pickedNotification = numOfNotifications - 1;
 		refresh_notification();
+		scroll_to_start();
 	}
 
 	set_busy_indicator(false);
