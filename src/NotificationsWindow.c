@@ -290,9 +290,13 @@ void notification_dismiss(int32_t notificationId)
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 14);
-	dict_write_int32(iterator, 1, notificationId);
+	dict_write_uint8(iterator, 0, 4);
+	dict_write_uint8(iterator, 1, 1);
+
+	dict_write_int32(iterator, 2, notificationId);
 	app_message_outbox_send();
+
+	set_busy_indicator(true);
 }
 
 void notification_back_single(ClickRecognizerRef recognizer, void* context)
