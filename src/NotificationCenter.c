@@ -170,6 +170,12 @@ void received_data(DictionaryIterator *received, void *context) {
 	}
 }
 
+void sent_data(DictionaryIterator *iterator, void *context)
+{
+	if (curWindow == 1)
+		notification_data_sent();
+}
+
 void closeApp()
 {
 	DictionaryIterator *iterator;
@@ -183,6 +189,7 @@ void closeApp()
 
 int main(void) {
 	app_message_register_inbox_received(received_data);
+	app_message_register_outbox_sent(sent_data);
 	app_message_open(124, 50);
 
 	DictionaryIterator *iterator;
@@ -190,8 +197,8 @@ int main(void) {
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
-
 	app_message_outbox_send();
+
 	loadingMode = true;
 
 	config_invertColors = persist_read_bool(0);

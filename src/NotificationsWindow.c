@@ -8,6 +8,9 @@ typedef struct
 	int32_t id;
 	bool inList;
 	bool scrollToEnd;
+	bool showMenuOnSelectPress;
+	bool showMenuOnSelectHold;
+	uint8_t numOfActions;
 	char title[31];
 	char subTitle[31];
 	char text[901];
@@ -56,7 +59,7 @@ Layer* menuBackground;
 MenuLayer* actionsMenu;
 bool actionsMenuDisplayed = false;
 char actions[20][20];
-uint8_t numOfActions = 0;
+int8_t actionPicked = -1;
 
 void registerButtons(void* context);
 
@@ -200,23 +203,6 @@ Notification* notification_find_notification(int32_t id)
 	return NULL;
 }
 
-void notification_action(Notification* notification, int action)
-{
-	DictionaryIterator *iterator;
-	AppMessageResult result = app_message_outbox_begin(&iterator);
-	if (result != APP_MSG_OK)
-		return;
-
-	dict_write_uint8(iterator, 0, 4);
-	dict_write_uint8(iterator, 1, 2);
-	dict_write_uint8(iterator, 2, action);
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
-
-	set_busy_indicator(true);
-}
-
 static void actions_init()
 {
 	for (int i = 0; i < 20; i++)
@@ -227,6 +213,7 @@ static void actions_init()
 
 static void menu_show()
 {
+	actions_init();
 	menu_layer_reload_data(actionsMenu);
 	MenuIndex firstItem;
 	firstItem.row = 0;
@@ -240,11 +227,13 @@ static void menu_hide()
 {
 	actionsMenuDisplayed = false;
 	layer_set_hidden((Layer*) menuBackground, true);
-	actions_init();
+
 }
 
 static void menu_up()
 {
+	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
+
 	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
 	if (index.row == 0)
 	{
@@ -257,6 +246,8 @@ static void menu_up()
 
 static void menu_down()
 {
+	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
+
 	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
 	if (index.row == numOfActions - 1)
 	{
@@ -265,6 +256,29 @@ static void menu_down()
 	}
 
 	menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
+}
+
+void notification_action(int action)
+{
+	actionPicked = -1;
+
+	DictionaryIterator *iterator;
+	AppMessageResult result = app_message_outbox_begin(&iterator);
+	if (result != APP_MSG_OK)
+	{
+		actionPicked = action;
+		return;
+	}
+
+	dict_write_uint8(iterator, 0, 4);
+	dict_write_uint8(iterator, 1, 2);
+	dict_write_uint8(iterator, 2, action);
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_message_outbox_send();
+
+	set_busy_indicator(true);
+	menu_hide();
 }
 
 void notification_sendSelectAction(int32_t notificationId, bool hold)
@@ -319,16 +333,15 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 	if (actionsMenuDisplayed)
 	{
-		if (busy)
-			return;
-
-		notification_action(curNotification, menu_layer_get_selected_index(actionsMenu).row);
-		menu_hide();
+		notification_action(menu_layer_get_selected_index(actionsMenu).row);
 	}
 	else
 	{
 		if (busy)
 			return;
+
+		if (curNotification->showMenuOnSelectPress)
+			menu_show();
 
 		notification_sendSelectAction(curNotification->id, false);
 	}
@@ -345,6 +358,9 @@ void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 
 	if (busy)
 		return;
+
+	if (curNotification->showMenuOnSelectHold)
+		menu_show();
 
 	notification_sendSelectAction(curNotification->id, true);
 }
@@ -552,7 +568,7 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 }
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
-	return numOfActions;
+	return notificationData[notificationPositions[pickedNotification]].numOfActions;
 }
 
 
@@ -580,7 +596,7 @@ void notification_newNotification(DictionaryIterator *received)
 	bool inList = (flags & 0x02) != 0;
 	bool autoSwitch = (flags & 0x04) != 0;
 
-	uint8_t numOfVibrationBytes = configBytes[3];
+	uint8_t numOfVibrationBytes = configBytes[4];
 
 	uint16_t newPeriodicVibration = configBytes[1] << 8 | configBytes[2];
 	if (newPeriodicVibration < periodicVibrationPeriod || periodicVibrationPeriod == 0)
@@ -601,7 +617,7 @@ void notification_newNotification(DictionaryIterator *received)
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
-					segments[i / 2] = configBytes[4 +i] | (configBytes[5 +i] << 8);
+					segments[i / 2] = configBytes[5 +i] | (configBytes[6 +i] << 8);
 					totalLength += segments[i / 2];
 					if (i % 4 == 0 && segments[i / 2] > 0)
 						vibrate = true;
@@ -630,6 +646,9 @@ void notification_newNotification(DictionaryIterator *received)
 	notification->id = id;
 	notification->inList = inList;
 	notification->scrollToEnd = (flags & 0x08) != 0;
+	notification->showMenuOnSelectPress = (flags & 0x10) != 0;
+	notification->showMenuOnSelectHold = (flags & 0x20) != 0;
+	notification->numOfActions = configBytes[3];
 	strcpy(notification->title, dict_find(received, 4)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
 	notification->text[0] = 0;
@@ -702,11 +721,19 @@ void notification_gotMoreText(DictionaryIterator *received)
 
 void notification_gotActionListItems(DictionaryIterator *received)
 {
-	numOfActions = dict_find(received, 2)->value->uint8;
-	uint8_t firstId = dict_find(received, 3)->value->uint8;
-	uint8_t* text = dict_find(received,4)->value->data;
+	uint8_t firstId = dict_find(received, 2)->value->uint8;
+	uint8_t* text = dict_find(received,3)->value->data;
+	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
 
 	uint8_t packetSize = numOfActions - firstId;
+
+	if (firstId == 0)
+	{
+		if (!actionsMenuDisplayed)
+			menu_show();
+
+		set_busy_indicator(false);
+	}
 
 	if (packetSize > 4)
 		packetSize = 4;
@@ -718,11 +745,6 @@ void notification_gotActionListItems(DictionaryIterator *received)
 
 	if (actionsMenuDisplayed)
 		menu_layer_reload_data(actionsMenu);
-	else if (firstId == 0)
-	{
-		menu_show();
-		set_busy_indicator(false);
-	}
 }
 
 
@@ -747,6 +769,12 @@ void notification_received_data(uint8_t module, uint8_t id, DictionaryIterator *
 	{
 		notification_gotActionListItems(received);
 	}
+}
+
+void notification_data_sent()
+{
+	if (actionPicked > -1)
+		notification_action(actionPicked);
 }
 
 void statusbarback_paint(Layer *layer, GContext *ctx)
