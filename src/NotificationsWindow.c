@@ -62,6 +62,8 @@ char actions[20][20];
 int8_t actionPicked = -1;
 
 void registerButtons(void* context);
+static void menu_show();
+static void menu_hide();
 
 void refresh_notification()
 {
@@ -127,6 +129,17 @@ void scroll_to_start()
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
 }
 
+void scroll_by(int16_t amount)
+{
+	GSize size = scroll_layer_get_content_size(scroll);
+	GPoint point = scroll_layer_get_content_offset(scroll);
+	point.y += amount;
+	if (point.y < -size.h)
+		point.y = -size.h;
+
+	scroll_layer_set_content_offset(scroll, point, true);
+}
+
 void set_busy_indicator(bool value)
 {
 	busy = value;
@@ -161,6 +174,7 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 
 		if (refresh)
 		{
+			menu_hide();
 			refresh_notification();
 			scroll_to_start();
 		}
@@ -417,14 +431,8 @@ void notification_up_click_proxy(ClickRecognizerRef recognizer, void* context)
 		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
 		if (skippedUpPresses == 1 )
 		{
-			GSize size = scroll_layer_get_content_size(scroll);
-			GPoint point = scroll_layer_get_content_offset(scroll);
-			point.y += 50;
-			if (point.y < -size.h)
-				point.y = -size.h;
-
-			scroll_layer_set_content_offset(scroll, point, true);
-						skippedUpPresses = 0;
+			scroll_by(50);
+			skippedUpPresses = 0;
 		}
 		else
 		{
@@ -446,14 +454,7 @@ void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
 		if (skippedDownPresses == 1 )
 		{
-			GSize size = scroll_layer_get_content_size(scroll);
-			GPoint point = scroll_layer_get_content_offset(scroll);
-			point.y -= 50;
-			if (point.y < -size.h)
-				point.y = -size.h;
-
-			scroll_layer_set_content_offset(scroll, point, true);
-			skippedDownPresses = 0;
+			scroll_by(-50);
 		}
 		else
 		{
