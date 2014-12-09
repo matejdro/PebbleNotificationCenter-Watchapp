@@ -3,6 +3,8 @@
 #include "NotificationCenter.h"
 #include "MainMenu.h"
 
+#define NOTIFICATION_SLOTS 5
+
 typedef struct
 {
 	int32_t id;
@@ -40,7 +42,6 @@ GBitmap* busyIndicator;
 uint8_t numOfNotifications = 0;
 uint8_t pickedNotification = 0;
 
-const int NOTIFICATION_SLOTS = 5;
 Notification notificationData[NOTIFICATION_SLOTS];
 uint8_t notificationPositions[NOTIFICATION_SLOTS];
 bool notificationDataUsed[NOTIFICATION_SLOTS];
