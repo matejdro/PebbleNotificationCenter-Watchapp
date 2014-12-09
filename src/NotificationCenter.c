@@ -143,7 +143,11 @@ void received_data(DictionaryIterator *received, void *context) {
 		received_config(received);
 		return;
 	}
-	else if (destModule == 2)
+
+	if (!gotConfig) //Do not react to anything until we got config
+		return;
+
+	if (destModule == 2)
 	{
 		if (curWindow != 2)
 		{
