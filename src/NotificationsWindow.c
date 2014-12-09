@@ -40,9 +40,10 @@ GBitmap* busyIndicator;
 uint8_t numOfNotifications = 0;
 uint8_t pickedNotification = 0;
 
-Notification notificationData[5];
-uint8_t notificationPositions[5];
-bool notificationDataUsed[5];
+const int NOTIFICATION_SLOTS = 5;
+Notification notificationData[NOTIFICATION_SLOTS];
+uint8_t notificationPositions[NOTIFICATION_SLOTS];
+bool notificationDataUsed[NOTIFICATION_SLOTS];
 
 ScrollLayer* scroll;
 
@@ -185,11 +186,11 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 
 Notification* notification_add_notification()
 {
-	if (numOfNotifications >= 5)
+	if (numOfNotifications >= NOTIFICATION_SLOTS)
 		notification_remove_notification(0, false);
 
 	uint8_t position = 0;
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
 	{
 		if (!notificationDataUsed[i])
 		{
@@ -209,7 +210,7 @@ Notification* notification_add_notification()
 
 Notification* notification_find_notification(int32_t id)
 {
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
 	{
 		if (notificationDataUsed[i] && notificationData[i].id == id)
 			return &notificationData[i];
@@ -993,7 +994,7 @@ void notification_window_init()
 
 
 	numOfNotifications = 0;
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
 	{
 		notificationDataUsed[i] = false;
 	}
