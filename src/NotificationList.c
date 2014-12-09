@@ -224,13 +224,13 @@ void freeData()
 
 void requestNotification(uint16_t pos)
 {
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, pos);
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	ending = true;
@@ -246,13 +246,13 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 		return;
 	}
 
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
 	dict_write_uint8(iterator, 1, 1);
 	dict_write_uint16(iterator, 2, pos);
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 }
 

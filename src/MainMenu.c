@@ -131,9 +131,8 @@ void notifications_picked(int index, void* context)
 	dict_write_uint8(iterator, 1, 1);
 	dict_write_uint8(iterator, 2, index);
 
-	app_message_outbox_send();
-
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_message_outbox_send();
 }
 
 void settings_picked(int index, void* context)
@@ -166,9 +165,9 @@ void settings_picked(int index, void* context)
 	dict_write_uint8(iterator, 2, sendingIndex);
 	dict_write_uint8(iterator, 3, sendingValue);
 
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 }
 
 void show_menu()

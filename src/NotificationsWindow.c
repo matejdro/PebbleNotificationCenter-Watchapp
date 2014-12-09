@@ -313,14 +313,13 @@ void notification_sendSelectAction(int32_t notificationId, bool hold)
 
 void notification_dismiss(int32_t notificationId)
 {
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
-
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 4);
 	dict_write_uint8(iterator, 1, 1);
 
 	dict_write_int32(iterator, 2, notificationId);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	set_busy_indicator(true);
@@ -483,7 +482,7 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 			dict_write_uint8(iterator, 0, 2);
 			dict_write_uint8(iterator, 1, 2);
 			dict_write_int8(iterator, 2, -1);
-			app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+			app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 			app_message_outbox_send();
 
 			set_busy_indicator(true);
@@ -521,7 +520,7 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 			dict_write_uint8(iterator, 0, 2);
 			dict_write_uint8(iterator, 1, 2);
 			dict_write_int8(iterator, 2, 1);
-			app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+			app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 			app_message_outbox_send();
 
 			set_busy_indicator(true);

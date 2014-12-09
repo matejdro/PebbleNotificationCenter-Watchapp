@@ -176,6 +176,8 @@ void received_data(DictionaryIterator *received, void *context) {
 
 void sent_data(DictionaryIterator *iterator, void *context)
 {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
+
 	if (curWindow == 1)
 		notification_data_sent();
 }
@@ -186,6 +188,7 @@ void closeApp()
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 3);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	closingMode = true;
@@ -201,6 +204,7 @@ int main(void) {
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	loadingMode = true;
@@ -208,8 +212,6 @@ int main(void) {
 	config_invertColors = persist_read_bool(0);
 
 	switchWindow(0);
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 
 	app_event_loop();
 
