@@ -10,7 +10,7 @@ typedef struct
 	bool scrollToEnd;
 	bool showMenuOnSelectPress;
 	bool showMenuOnSelectHold;
-	uint8_t numOfActions;
+	uint8_t numOfActionsInDefaultMenu;
 	char title[31];
 	char subTitle[31];
 	char text[901];
@@ -59,6 +59,7 @@ Layer* menuBackground;
 MenuLayer* actionsMenu;
 bool actionsMenuDisplayed = false;
 char actions[20][20];
+uint8_t numOfActions = 0;
 int8_t actionPicked = -1;
 
 void registerButtons(void* context);
@@ -246,8 +247,6 @@ static void menu_hide()
 
 static void menu_up()
 {
-	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
-
 	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
 	if (index.row == 0)
 	{
@@ -260,8 +259,6 @@ static void menu_up()
 
 static void menu_down()
 {
-	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
-
 	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
 	if (index.row == numOfActions - 1)
 	{
@@ -355,7 +352,10 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 			return;
 
 		if (curNotification->showMenuOnSelectPress)
+		{
+			numOfActions = curNotification->numOfActionsInDefaultMenu;
 			menu_show();
+		}
 
 		notification_sendSelectAction(curNotification->id, false);
 	}
@@ -374,7 +374,10 @@ void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 		return;
 
 	if (curNotification->showMenuOnSelectHold)
+	{
+		numOfActions = curNotification->numOfActionsInDefaultMenu;
 		menu_show();
+	}
 
 	notification_sendSelectAction(curNotification->id, true);
 }
@@ -569,7 +572,7 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 }
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
-	return notificationData[notificationPositions[pickedNotification]].numOfActions;
+	return numOfActions;
 }
 
 
@@ -649,7 +652,7 @@ void notification_newNotification(DictionaryIterator *received)
 	notification->scrollToEnd = (flags & 0x08) != 0;
 	notification->showMenuOnSelectPress = (flags & 0x10) != 0;
 	notification->showMenuOnSelectHold = (flags & 0x20) != 0;
-	notification->numOfActions = configBytes[3];
+	notification->numOfActionsInDefaultMenu = configBytes[3];
 	strcpy(notification->title, dict_find(received, 4)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
 	notification->text[0] = 0;
@@ -723,8 +726,9 @@ void notification_gotMoreText(DictionaryIterator *received)
 void notification_gotActionListItems(DictionaryIterator *received)
 {
 	uint8_t firstId = dict_find(received, 2)->value->uint8;
-	uint8_t* text = dict_find(received,3)->value->data;
-	uint8_t numOfActions = notificationData[notificationPositions[pickedNotification]].numOfActions;
+	numOfActions = dict_find(received,3)->value->uint8;
+	uint8_t* text = dict_find(received,4)->value->data;
+
 
 	uint8_t packetSize = numOfActions - firstId;
 
