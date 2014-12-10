@@ -46,7 +46,7 @@ void show_update_dialog()
 void show_old_watchapp()
 {
 	show_update_dialog();
-	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate Pebble App \n\n Open link:\n www.goo.gl/0e0h9m");
+	text_layer_set_text(menuLoadingLayer, "Notification Center\nOutdated Watchapp \n\n Check your phone");
 
 }
 
@@ -54,7 +54,7 @@ void show_old_android()
 {
 	show_update_dialog();
 
-	text_layer_set_text(menuLoadingLayer, "NotificationCenter\nUpdate Android App \n\n Open link:\n www.goo.gl/0e0h9m");
+	text_layer_set_text(menuLoadingLayer, "Notification Center\nUpdate Android App \n\n Open link:\n www.goo.gl/0e0h9m");
 
 }
 
