@@ -65,7 +65,7 @@ uint8_t numOfActions = 0;
 int8_t actionPicked = -1;
 
 void registerButtons(void* context);
-static void menu_show();
+void menu_show();
 static void menu_hide();
 
 void refresh_notification()
@@ -185,7 +185,7 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 	}
 }
 
-Notification* notification_add_notification()
+inline Notification* notification_add_notification()
 {
 	if (numOfNotifications >= NOTIFICATION_SLOTS)
 		notification_remove_notification(0, false);
@@ -220,7 +220,7 @@ Notification* notification_find_notification(int32_t id)
 	return NULL;
 }
 
-static void actions_init()
+inline static void actions_init()
 {
 	for (int i = 0; i < 20; i++)
 	{
@@ -228,7 +228,7 @@ static void actions_init()
 	}
 }
 
-static void menu_show()
+void menu_show()
 {
 	actions_init();
 	menu_layer_reload_data(actionsMenu);
@@ -311,7 +311,7 @@ void notification_sendSelectAction(int32_t notificationId, bool hold)
 	set_busy_indicator(true);
 }
 
-void notification_dismiss(int32_t notificationId)
+inline void notification_dismiss(int32_t notificationId)
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -591,7 +591,7 @@ void vibration_stopped(void* data)
 	vibrating = false;
 }
 
-void notification_newNotification(DictionaryIterator *received)
+inline void notification_newNotification(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 
@@ -687,7 +687,7 @@ void notification_newNotification(DictionaryIterator *received)
 
 }
 
-void notification_gotDismiss(DictionaryIterator *received)
+inline void notification_gotDismiss(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 	for (int i = 0; i < numOfNotifications; i++)
@@ -704,7 +704,7 @@ void notification_gotDismiss(DictionaryIterator *received)
 	}
 }
 
-void notification_gotMoreText(DictionaryIterator *received)
+inline void notification_gotMoreText(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 
@@ -719,7 +719,7 @@ void notification_gotMoreText(DictionaryIterator *received)
 		refresh_notification();
 }
 
-void notification_gotActionListItems(DictionaryIterator *received)
+inline void notification_gotActionListItems(DictionaryIterator *received)
 {
 	uint8_t firstId = dict_find(received, 2)->value->uint8;
 	numOfActions = dict_find(received,3)->value->uint8;

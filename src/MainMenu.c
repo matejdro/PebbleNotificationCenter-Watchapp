@@ -20,7 +20,7 @@ TextLayer* quitText;
 
 SimpleMenuLayer* menuLayer;
 
-static InverterLayer* inverterLayer;
+InverterLayer* inverterLayer;
 
 bool firstAppear = true;
 bool menuLoaded = false;
@@ -65,7 +65,7 @@ void show_quit()
 	layer_set_hidden((Layer *) quitText, false);
 }
 
-void reload_menu()
+inline void reload_menu()
 {
 	Layer* topLayer = window_get_root_layer(menuWindow);
 
