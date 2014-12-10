@@ -26,8 +26,7 @@ static InverterLayer* inverterLayer;
 GBitmap* normalNotification;
 GBitmap* ongoingNotification;
 
-int8_t convertToArrayPos(uint16_t index)
-{
+int8_t convertToArrayPos(uint16_t index) {
 	int16_t indexDiff = index - centerIndex;
 	if (indexDiff > LIST_STORAGE_SIZE / 2 || indexDiff < -LIST_STORAGE_SIZE / 2)
 		return -1;
@@ -41,8 +40,7 @@ int8_t convertToArrayPos(uint16_t index)
 	return arrayPos;
 }
 
-char* getTitle(uint16_t index)
-{
+char* getTitle(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -50,17 +48,15 @@ char* getTitle(uint16_t index)
 	return titles[arrayPos];
 }
 
-void setTitle(uint16_t index, char *name)
-{
+void setTitle(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
 
-	strcpy(titles[arrayPos],name);
+	strcpy(titles[arrayPos], name);
 }
 
-char* getSubtitle(uint16_t index)
-{
+char* getSubtitle(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -68,17 +64,15 @@ char* getSubtitle(uint16_t index)
 	return subtitles[arrayPos];
 }
 
-void setSubtitle(uint16_t index, char *name)
-{
+void setSubtitle(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
 
-	strcpy(subtitles[arrayPos],name);
+	strcpy(subtitles[arrayPos], name);
 }
 
-uint8_t getType(uint16_t index)
-{
+uint8_t getType(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return 0;
@@ -86,8 +80,7 @@ uint8_t getType(uint16_t index)
 	return types[arrayPos];
 }
 
-void setType(uint16_t index, uint8_t type)
-{
+void setType(uint16_t index, uint8_t type) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
@@ -95,8 +88,7 @@ void setType(uint16_t index, uint8_t type)
 	types[arrayPos] = type;
 }
 
-char* getDate(uint16_t index)
-{
+char* getDate(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -104,37 +96,32 @@ char* getDate(uint16_t index)
 	return dates[arrayPos];
 }
 
-void setDate(uint16_t index, char *name)
-{
+void setDate(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
 
-	strcpy(dates[arrayPos],name);
+	strcpy(dates[arrayPos], name);
 }
 
-void shiftArray(int newIndex)
-{
+void shiftArray(int newIndex) {
 	int8_t clearIndex;
 
 	int16_t diff = newIndex - centerIndex;
 	if (diff == 0)
 		return;
 
-	centerIndex+= diff;
-	arrayCenterPos+= diff;
+	centerIndex += diff;
+	arrayCenterPos += diff;
 
-	if (diff > 0)
-	{
+	if (diff > 0) {
 		if (arrayCenterPos > LIST_STORAGE_SIZE - 1)
 			arrayCenterPos -= LIST_STORAGE_SIZE;
 
 		clearIndex = arrayCenterPos - LIST_STORAGE_SIZE / 2;
 		if (clearIndex < 0)
 			clearIndex += LIST_STORAGE_SIZE;
-	}
-	else
-	{
+	} else {
 		if (arrayCenterPos < 0)
 			arrayCenterPos += LIST_STORAGE_SIZE;
 
@@ -150,16 +137,13 @@ void shiftArray(int newIndex)
 
 }
 
-uint8_t getEmptySpacesDown()
-{
+uint8_t getEmptySpacesDown() {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i <= centerIndex + LIST_STORAGE_SIZE / 2; i++)
-	{
+	for (int i = centerIndex; i <= centerIndex + LIST_STORAGE_SIZE / 2; i++) {
 		if (i >= numEntries)
 			return LIST_STORAGE_SIZE;
 
-		if (*getTitle(i) == 0)
-		{
+		if (*getTitle(i) == 0) {
 			break;
 		}
 
@@ -169,16 +153,13 @@ uint8_t getEmptySpacesDown()
 	return spaces;
 }
 
-uint8_t getEmptySpacesUp()
-{
+uint8_t getEmptySpacesUp() {
 	uint8_t spaces = 0;
-	for (int i = centerIndex; i >= centerIndex - LIST_STORAGE_SIZE / 2; i--)
-	{
+	for (int i = centerIndex; i >= centerIndex - LIST_STORAGE_SIZE / 2; i--) {
 		if (i < 0)
 			return LIST_STORAGE_SIZE;
 
-		if (*getTitle(i) == 0)
-		{
+		if (*getTitle(i) == 0) {
 			break;
 		}
 
@@ -188,15 +169,13 @@ uint8_t getEmptySpacesUp()
 	return spaces;
 }
 
-void allocateData()
-{
+void allocateData() {
 	titles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
 	subtitles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
 	dates = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
 	types = malloc(sizeof(uint8_t) * LIST_STORAGE_SIZE);
 
-	for (int i = 0; i < LIST_STORAGE_SIZE; i++)
-	{
+	for (int i = 0; i < LIST_STORAGE_SIZE; i++) {
 		titles[i] = malloc(sizeof(char) * 21);
 		subtitles[i] = malloc(sizeof(char) * 21);
 		dates[i] = malloc(sizeof(char) * 21);
@@ -207,10 +186,8 @@ void allocateData()
 	}
 }
 
-void freeData()
-{
-	for (int i = 0; i < LIST_STORAGE_SIZE; i++)
-	{
+void freeData() {
+	for (int i = 0; i < LIST_STORAGE_SIZE; i++) {
 		free(titles[i]);
 		free(subtitles[i]);
 		free(dates[i]);
@@ -222,8 +199,7 @@ void freeData()
 	free(types);
 }
 
-void requestNotification(uint16_t pos)
-{
+void requestNotification(uint16_t pos) {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
@@ -236,10 +212,8 @@ void requestNotification(uint16_t pos)
 	ending = true;
 }
 
-void sendpickedEntry(int16_t pos, uint8_t mode)
-{
-	if (ending)
-	{
+void sendpickedEntry(int16_t pos, uint8_t mode) {
+	if (ending) {
 		pickedEntry = pos;
 		pickedMode = mode;
 
@@ -256,21 +230,17 @@ void sendpickedEntry(int16_t pos, uint8_t mode)
 	app_message_outbox_send();
 }
 
-void requestAdditionalEntries()
-{
+void requestAdditionalEntries() {
 	if (ending)
 		return;
 
 	int emptyDown = getEmptySpacesDown();
 	int emptyUp = getEmptySpacesUp();
 
-	if (emptyDown < 6 && emptyDown <= emptyUp)
-	{
+	if (emptyDown < 6 && emptyDown <= emptyUp) {
 		uint8_t startingIndex = centerIndex + emptyDown;
 		requestNotification(startingIndex);
-	}
-	else if (emptyUp < 6)
-	{
+	} else if (emptyUp < 6) {
 		uint8_t startingIndex = centerIndex - emptyUp;
 		requestNotification(startingIndex);
 	}
@@ -280,32 +250,41 @@ uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 	return 1;
 }
 
-uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
+uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index,
+		void *data) {
 	return numEntries;
 }
 
-
-int16_t menu_get_row_height_callback(MenuLayer *me,  MenuIndex *cell_index, void *data) {
+int16_t menu_get_row_height_callback(MenuLayer *me, MenuIndex *cell_index,
+		void *data) {
 	return 56;
 }
 
-void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index, MenuIndex old_index, void *callback_context)
-{
+void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
+		MenuIndex old_index, void *callback_context) {
 	shiftArray(new_index.row);
 	requestAdditionalEntries();
 }
 
-
-void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
+		MenuIndex *cell_index, void *data) {
 	graphics_context_set_text_color(ctx, GColorBlack);
 
-	graphics_draw_text(ctx, getTitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(34, 0, 144 - 35, 21), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getSubtitle(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14), GRect(34, 21, 144 - 35, 17), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getDate(cell_index->row), fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), GRect(34, 39, 144 - 35, 18), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getTitle(cell_index->row),
+			fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+			GRect(34, 0, 144 - 35, 21), GTextOverflowModeTrailingEllipsis,
+			GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getSubtitle(cell_index->row),
+			fonts_get_system_font(FONT_KEY_GOTHIC_14),
+			GRect(34, 21, 144 - 35, 17), GTextOverflowModeTrailingEllipsis,
+			GTextAlignmentLeft, NULL);
+	graphics_draw_text(ctx, getDate(cell_index->row),
+			fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+			GRect(34, 39, 144 - 35, 18), GTextOverflowModeTrailingEllipsis,
+			GTextAlignmentLeft, NULL);
 
 	GBitmap* image;
-	switch (getType(cell_index->row))
-	{
+	switch (getType(cell_index->row)) {
 	case 1:
 		image = ongoingNotification;
 		break;
@@ -317,13 +296,11 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *c
 	graphics_draw_bitmap_in_rect(ctx, image, GRect(1, 14, 31, 31));
 }
 
-
 void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 	sendpickedEntry(cell_index->row, 0);
 }
 
-void receivedEntries(DictionaryIterator* data)
-{
+void receivedEntries(DictionaryIterator* data) {
 	uint16_t offset = dict_find(data, 2)->value->uint16;
 	numEntries = dict_find(data, 3)->value->uint16;
 
@@ -335,18 +312,15 @@ void receivedEntries(DictionaryIterator* data)
 	menu_layer_reload_data(listMenuLayer);
 	ending = false;
 
-	if (pickedEntry >= 0)
-	{
+	if (pickedEntry >= 0) {
 		sendpickedEntry(pickedEntry, pickedMode);
 		return;
 	}
 	requestAdditionalEntries();
 }
 
-void list_data_received(int packetId, DictionaryIterator* data)
-{
-	switch (packetId)
-	{
+void list_data_received(int packetId, DictionaryIterator* data) {
+	switch (packetId) {
 	case 0:
 		receivedEntries(data);
 		break;
@@ -366,21 +340,19 @@ void list_window_load(Window *me) {
 	listMenuLayer = menu_layer_create(GRect(0, 0, 144, 168 - 16));
 
 	// Set all the callbacks for the menu layer
-	menu_layer_set_callbacks(listMenuLayer, NULL, (MenuLayerCallbacks){
-		.get_num_sections = menu_get_num_sections_callback,
-				.get_num_rows = menu_get_num_rows_callback,
-				.get_cell_height = menu_get_row_height_callback,
-				.draw_row = menu_draw_row_callback,
-				.select_click = menu_select_callback,
-				.selection_changed = menu_pos_changed
-	});
+	menu_layer_set_callbacks(listMenuLayer, NULL, (MenuLayerCallbacks ) {
+					.get_num_sections = menu_get_num_sections_callback,
+					.get_num_rows = menu_get_num_rows_callback,
+					.get_cell_height = menu_get_row_height_callback, .draw_row =
+							menu_draw_row_callback, .select_click =
+							menu_select_callback, .selection_changed =
+							menu_pos_changed });
 
 	menu_layer_set_click_config_onto_window(listMenuLayer, listWindow);
 
 	layer_add_child(topLayer, (Layer*) listMenuLayer);
 
-	if (config_invertColors)
-	{
+	if (config_invertColors) {
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
@@ -402,8 +374,7 @@ void list_window_unload(Window *me) {
 	freeData();
 }
 
-void list_window_appear(Window* me)
-{
+void list_window_appear(Window* me) {
 	setCurWindow(2);
 
 	ending = false;
@@ -413,17 +384,14 @@ void list_window_appear(Window* me)
 	requestAdditionalEntries();
 }
 
-void init_notification_list_window()
-{
+void init_notification_list_window() {
 	listWindow = window_create();
 
-	window_set_window_handlers(listWindow, (WindowHandlers){
-		.appear = list_window_appear,
-		.load = list_window_load,
-		.unload = list_window_unload
+	window_set_window_handlers(listWindow, (WindowHandlers ) { .appear =
+					list_window_appear, .load = list_window_load, .unload =
+					list_window_unload
 
-
-	});
+			});
 
 	window_set_fullscreen(listWindow, false);
 

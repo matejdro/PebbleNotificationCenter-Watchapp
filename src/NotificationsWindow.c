@@ -662,12 +662,11 @@ void notification_newNotification(DictionaryIterator *received)
 	{
 		for (int i = 0; i < numOfNotifications; i++)
 		{
-
-			Notification entry = notificationData[notificationPositions[i]];
-			if (entry.id == notification->id)
+			Notification* entry = &notificationData[notificationPositions[i]];
+			if (entry->id == notification->id)
 				continue;
 
-			if (entry.inList)
+			if (entry->inList)
 			{
 				notification_remove_notification(i, false);
 				i--;
@@ -675,15 +674,11 @@ void notification_newNotification(DictionaryIterator *received)
 		}
 	}
 
-
-	if (numOfNotifications == 1)
-	{
-		refresh_notification();
-		scroll_to_start();
-	}
-	else if (autoSwitch && !actionsMenuDisplayed)
-	{
+	if (autoSwitch && !actionsMenuDisplayed)
 		pickedNotification = numOfNotifications - 1;
+
+	if (pickedNotification == numOfNotifications - 1)
+	{
 		refresh_notification();
 		scroll_to_start();
 	}
@@ -892,6 +887,18 @@ void notification_disappears(Window *window)
 		closingMode = true;
 }
 
+
+TextLayer* init_text_layer(int fontId)
+{
+	TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
+	text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
+	scroll_layer_add_child(scroll, (Layer*) layer);
+
+	text_layer_set_font(layer, fonts_get_system_font(config_getFontResource(fontId)));
+
+	return layer;
+}
+
 void notification_load(Window *window)
 {
 	busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
@@ -916,21 +923,9 @@ void notification_load(Window *window)
 	scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
 	layer_add_child(topLayer, (Layer*) scroll);
 
-	title = text_layer_create(GRect(2, 0, 144 - 4, 18));
-	text_layer_set_overflow_mode(title, GTextOverflowModeWordWrap);
-	scroll_layer_add_child(scroll, (Layer*) title);
-
-	subTitle = text_layer_create(GRect(2, 18, 144 - 4, 16));
-	text_layer_set_overflow_mode(subTitle, GTextOverflowModeWordWrap);
-	scroll_layer_add_child(scroll, (Layer*) subTitle);
-
-	text = text_layer_create(GRect(2, 18 + 16, 144 - 4, 16));
-	text_layer_set_overflow_mode(text, GTextOverflowModeWordWrap);
-	scroll_layer_add_child(scroll, (Layer*) text);
-
-	text_layer_set_font(title, fonts_get_system_font(config_getFontResource(config_titleFont)));
-	text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(config_subtitleFont)));
-	text_layer_set_font(text, fonts_get_system_font(config_getFontResource(config_bodyFont)));
+	title = init_text_layer(config_titleFont);
+	subTitle = init_text_layer(config_subtitleFont);
+	text = init_text_layer(config_bodyFont);
 
 	menuBackground = layer_create(GRect(9, 25, 144 - 18, 168 - 34));
 	layer_set_update_proc(menuBackground, menu_paint_background);
@@ -939,7 +934,6 @@ void notification_load(Window *window)
 
 	actionsMenu = menu_layer_create(GRect(1, 1, 144 - 20, 168 - 36));
 	layer_add_child(menuBackground, (Layer*) actionsMenu);
-
 
 	menu_layer_set_callbacks(actionsMenu, NULL, (MenuLayerCallbacks) {
 		.get_num_sections = menu_get_num_sections_callback,
@@ -957,6 +951,7 @@ void notification_load(Window *window)
 	if (config_shakeAction > 0)
 		accel_tap_service_subscribe(accelerometer_shake);
 
+	refresh_notification();
 }
 
 void notification_unload(Window *window)
