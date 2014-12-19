@@ -4,29 +4,29 @@
 
 #define LIST_STORAGE_SIZE 6
 
-Window* listWindow;
+static Window* window;
 
-uint16_t numEntries = 0;
+static uint16_t numEntries = 0;
 
-int8_t arrayCenterPos = 0;
-int16_t centerIndex = 0;
+static int8_t arrayCenterPos = 0;
+static int16_t centerIndex = 0;
 
-int16_t pickedEntry = -1;
-uint8_t pickedMode = 0;
+static int16_t pickedEntry = -1;
+static uint8_t pickedMode = 0;
 
-bool ending = false;
-char** titles;
-char** subtitles;
-uint8_t* types;
-char** dates;
+static bool ending = false;
+static char** titles;
+static char** subtitles;
+static uint8_t* types;
+static char** dates;
 
-MenuLayer* listMenuLayer;
+static MenuLayer* menuLayer;
 static InverterLayer* inverterLayer;
 
-GBitmap* normalNotification;
-GBitmap* ongoingNotification;
+static GBitmap* normalNotification;
+static GBitmap* ongoingNotification;
 
-int8_t convertToArrayPos(uint16_t index) {
+static int8_t convertToArrayPos(uint16_t index) {
 	int16_t indexDiff = index - centerIndex;
 	if (indexDiff > LIST_STORAGE_SIZE / 2 || indexDiff < -LIST_STORAGE_SIZE / 2)
 		return -1;
@@ -40,7 +40,7 @@ int8_t convertToArrayPos(uint16_t index) {
 	return arrayPos;
 }
 
-char* getTitle(uint16_t index) {
+static char* getTitle(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -48,7 +48,7 @@ char* getTitle(uint16_t index) {
 	return titles[arrayPos];
 }
 
-void setTitle(uint16_t index, char *name) {
+static void setTitle(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
@@ -56,7 +56,7 @@ void setTitle(uint16_t index, char *name) {
 	strcpy(titles[arrayPos], name);
 }
 
-char* getSubtitle(uint16_t index) {
+static char* getSubtitle(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -64,7 +64,7 @@ char* getSubtitle(uint16_t index) {
 	return subtitles[arrayPos];
 }
 
-void setSubtitle(uint16_t index, char *name) {
+static void setSubtitle(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
@@ -72,7 +72,7 @@ void setSubtitle(uint16_t index, char *name) {
 	strcpy(subtitles[arrayPos], name);
 }
 
-uint8_t getType(uint16_t index) {
+static uint8_t getType(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return 0;
@@ -80,7 +80,7 @@ uint8_t getType(uint16_t index) {
 	return types[arrayPos];
 }
 
-void setType(uint16_t index, uint8_t type) {
+static void setType(uint16_t index, uint8_t type) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
@@ -88,7 +88,7 @@ void setType(uint16_t index, uint8_t type) {
 	types[arrayPos] = type;
 }
 
-char* getDate(uint16_t index) {
+static char* getDate(uint16_t index) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return "";
@@ -96,7 +96,7 @@ char* getDate(uint16_t index) {
 	return dates[arrayPos];
 }
 
-void setDate(uint16_t index, char *name) {
+static void setDate(uint16_t index, char *name) {
 	int8_t arrayPos = convertToArrayPos(index);
 	if (arrayPos < 0)
 		return;
@@ -104,7 +104,7 @@ void setDate(uint16_t index, char *name) {
 	strcpy(dates[arrayPos], name);
 }
 
-inline void shiftArray(int newIndex) {
+static void shiftArray(int newIndex) {
 	int8_t clearIndex;
 
 	int16_t diff = newIndex - centerIndex;
@@ -137,7 +137,7 @@ inline void shiftArray(int newIndex) {
 
 }
 
-uint8_t getEmptySpacesDown() {
+static uint8_t getEmptySpacesDown() {
 	uint8_t spaces = 0;
 	for (int i = centerIndex; i <= centerIndex + LIST_STORAGE_SIZE / 2; i++) {
 		if (i >= numEntries)
@@ -153,7 +153,7 @@ uint8_t getEmptySpacesDown() {
 	return spaces;
 }
 
-uint8_t getEmptySpacesUp() {
+static uint8_t getEmptySpacesUp() {
 	uint8_t spaces = 0;
 	for (int i = centerIndex; i >= centerIndex - LIST_STORAGE_SIZE / 2; i--) {
 		if (i < 0)
@@ -169,7 +169,7 @@ uint8_t getEmptySpacesUp() {
 	return spaces;
 }
 
-inline void allocateData() {
+static void allocateData(void) {
 	titles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
 	subtitles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
 	dates = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
@@ -186,7 +186,7 @@ inline void allocateData() {
 	}
 }
 
-inline void freeData() {
+static void freeData(void) {
 	for (int i = 0; i < LIST_STORAGE_SIZE; i++) {
 		free(titles[i]);
 		free(subtitles[i]);
@@ -199,7 +199,7 @@ inline void freeData() {
 	free(types);
 }
 
-void requestNotification(uint16_t pos) {
+static void requestNotification(uint16_t pos) {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
@@ -212,7 +212,7 @@ void requestNotification(uint16_t pos) {
 	ending = true;
 }
 
-void sendpickedEntry(int16_t pos, uint8_t mode) {
+static void sendpickedEntry(int16_t pos, uint8_t mode) {
 	if (ending) {
 		pickedEntry = pos;
 		pickedMode = mode;
@@ -230,7 +230,7 @@ void sendpickedEntry(int16_t pos, uint8_t mode) {
 	app_message_outbox_send();
 }
 
-void requestAdditionalEntries() {
+static void requestAdditionalEntries(void) {
 	if (ending)
 		return;
 
@@ -246,27 +246,27 @@ void requestAdditionalEntries() {
 	}
 }
 
-uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
+static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 	return 1;
 }
 
-uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index,
+static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index,
 		void *data) {
 	return numEntries;
 }
 
-int16_t menu_get_row_height_callback(MenuLayer *me, MenuIndex *cell_index,
+static int16_t menu_get_row_height_callback(MenuLayer *me, MenuIndex *cell_index,
 		void *data) {
 	return 56;
 }
 
-void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
+static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 		MenuIndex old_index, void *callback_context) {
 	shiftArray(new_index.row);
 	requestAdditionalEntries();
 }
 
-void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
+static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 		MenuIndex *cell_index, void *data) {
 	graphics_context_set_text_color(ctx, GColorBlack);
 
@@ -296,11 +296,11 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 	graphics_draw_bitmap_in_rect(ctx, image, GRect(1, 14, 31, 31));
 }
 
-void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
+static void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 	sendpickedEntry(cell_index->row, 0);
 }
 
-inline void receivedEntries(DictionaryIterator* data) {
+static void receivedEntries(DictionaryIterator* data) {
 	uint16_t offset = dict_find(data, 2)->value->uint16;
 	numEntries = dict_find(data, 3)->value->uint16;
 
@@ -309,7 +309,7 @@ inline void receivedEntries(DictionaryIterator* data) {
 	setSubtitle(offset, dict_find(data, 6)->value->cstring);
 	setDate(offset, dict_find(data, 7)->value->cstring);
 
-	menu_layer_reload_data(listMenuLayer);
+	menu_layer_reload_data(menuLayer);
 	ending = false;
 
 	if (pickedEntry >= 0) {
@@ -319,7 +319,7 @@ inline void receivedEntries(DictionaryIterator* data) {
 	requestAdditionalEntries();
 }
 
-void list_data_received(int packetId, DictionaryIterator* data) {
+void list_window_data_received(int packetId, DictionaryIterator* data) {
 	switch (packetId) {
 	case 0:
 		receivedEntries(data);
@@ -329,25 +329,18 @@ void list_data_received(int packetId, DictionaryIterator* data) {
 
 }
 
-void list_window_load(Window *me) {
-}
-
-void list_window_unload(Window *me) {
-	window_destroy(me);
-}
-
-void list_window_appear(Window* me) {
+static void window_appear(Window* me) {
 	setCurWindow(2);
 
 	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
 
-	Layer* topLayer = window_get_root_layer(listWindow);
+	Layer* topLayer = window_get_root_layer(window);
 
-	listMenuLayer = menu_layer_create(GRect(0, 0, 144, 168 - 16));
+	menuLayer = menu_layer_create(GRect(0, 0, 144, 168 - 16));
 
 	// Set all the callbacks for the menu layer
-	menu_layer_set_callbacks(listMenuLayer, NULL, (MenuLayerCallbacks ) {
+	menu_layer_set_callbacks(menuLayer, NULL, (MenuLayerCallbacks ) {
 					.get_num_sections = menu_get_num_sections_callback,
 					.get_num_rows = menu_get_num_rows_callback,
 					.get_cell_height = menu_get_row_height_callback, .draw_row =
@@ -355,9 +348,9 @@ void list_window_appear(Window* me) {
 							menu_select_callback, .selection_changed =
 							menu_pos_changed });
 
-	menu_layer_set_click_config_onto_window(listMenuLayer, listWindow);
+	menu_layer_set_click_config_onto_window(menuLayer, window);
 
-	layer_add_child(topLayer, (Layer*) listMenuLayer);
+	layer_add_child(topLayer, (Layer*) menuLayer);
 
 	if (config_invertColors) {
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
@@ -375,12 +368,12 @@ void list_window_appear(Window* me) {
 	requestAdditionalEntries();
 }
 
-void list_window_disappear(Window* me)
+static void window_disappear(Window* me)
 {
 	gbitmap_destroy(normalNotification);
 	gbitmap_destroy(ongoingNotification);
 
-	menu_layer_destroy(listMenuLayer);
+	menu_layer_destroy(menuLayer);
 
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
@@ -389,20 +382,27 @@ void list_window_disappear(Window* me)
 
 }
 
-void init_notification_list_window() {
-	listWindow = window_create();
+static void window_load(Window *me) {
+}
 
-	window_set_window_handlers(listWindow, (WindowHandlers ) {
-					.appear = list_window_appear,
-					.load = list_window_load,
-					.unload = list_window_unload,
-					.disappear = list_window_disappear
+static void window_unload(Window *me) {
+	window_destroy(me);
+}
+
+void list_window_init(void) {
+	window = window_create();
+
+	window_set_window_handlers(window, (WindowHandlers ) {
+					.appear = window_appear,
+					.load = window_load,
+					.unload = window_unload,
+					.disappear = window_disappear
 
 			});
 
-	window_set_fullscreen(listWindow, false);
+	window_set_fullscreen(window, false);
 
-	window_stack_push(listWindow, false /* Animated */);
+	window_stack_push(window, false /* Animated */);
 
 }
 

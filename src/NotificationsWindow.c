@@ -1,7 +1,8 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
-#include "MainMenu.h"
+#include "MainMenuWindow.h"
+#include "ActionsMenu.h"
 
 #define NOTIFICATION_SLOTS 5
 
@@ -20,55 +21,47 @@ typedef struct
 } Notification;
 
 
-uint32_t elapsedTime = 0;
-bool appIdle = true;
-bool vibrating = false;
+static uint32_t elapsedTime = 0;
+static bool appIdle = true;
+static bool vibrating = false;
 
-uint16_t periodicVibrationPeriod = 0;
+static uint16_t periodicVibrationPeriod = 0;
 
-Window* notifyWindow;
+static Window* notifyWindow;
 
 static InverterLayer* inverterLayer;
 
-Layer* statusbar;
-TextLayer* statusClock;
-char clockText[9];
+static Layer* statusbar;
+static TextLayer* statusClock;
+static char clockText[9];
 
-Layer* circlesLayer;
+static Layer* circlesLayer;
 
-bool busy;
-GBitmap* busyIndicator;
+static bool busy;
+static GBitmap* busyIndicator;
 
-uint8_t numOfNotifications = 0;
-uint8_t pickedNotification = 0;
+static uint8_t numOfNotifications = 0;
+static uint8_t pickedNotification = 0;
+static int8_t pickedAction = -1;
 
-Notification notificationData[NOTIFICATION_SLOTS];
-uint8_t notificationPositions[NOTIFICATION_SLOTS];
-bool notificationDataUsed[NOTIFICATION_SLOTS];
+static Notification notificationData[NOTIFICATION_SLOTS];
+static uint8_t notificationPositions[NOTIFICATION_SLOTS];
+static bool notificationDataUsed[NOTIFICATION_SLOTS];
 
-ScrollLayer* scroll;
+static ScrollLayer* scroll;
 
-bool upPressed = false;
-bool downPressed = false;
-uint8_t skippedUpPresses = 0;
-uint8_t skippedDownPresses = 0;
+static bool upPressed = false;
+static bool downPressed = false;
+static uint8_t skippedUpPresses = 0;
+static uint8_t skippedDownPresses = 0;
 
-TextLayer* title;
-TextLayer* subTitle;
-TextLayer* text;
+static TextLayer* title;
+static TextLayer* subTitle;
+static TextLayer* text;
 
-Layer* menuBackground;
-MenuLayer* actionsMenu;
-bool actionsMenuDisplayed = false;
-char actions[20][20];
-uint8_t numOfActions = 0;
-int8_t actionPicked = -1;
+static void registerButtons(void* context);
 
-void registerButtons(void* context);
-void menu_show();
-static void menu_hide();
-
-void refresh_notification()
+static void refresh_notification(void)
 {
 	char* titleText;
 	char* subtitleText;
@@ -120,7 +113,7 @@ void refresh_notification()
 	layer_mark_dirty(circlesLayer);
 }
 
-void scroll_to_start()
+static void scroll_to_notification_start(void)
 {
 	int16_t scrollTo = 0;
 
@@ -132,7 +125,7 @@ void scroll_to_start()
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
 }
 
-void scroll_by(int16_t amount)
+static void scroll_notification_by(int16_t amount)
 {
 	GSize size = scroll_layer_get_content_size(scroll);
 	GPoint point = scroll_layer_get_content_offset(scroll);
@@ -143,13 +136,13 @@ void scroll_by(int16_t amount)
 	scroll_layer_set_content_offset(scroll, point, true);
 }
 
-void set_busy_indicator(bool value)
+static void set_busy_indicator(bool value)
 {
 	busy = value;
 	layer_mark_dirty(statusbar);
 }
 
-void notification_remove_notification(uint8_t id, bool closeAutomatically)
+static void remove_notification(uint8_t id, bool closeAutomatically)
 {
 	if (numOfNotifications <= 1 && closeAutomatically)
 	{
@@ -177,18 +170,18 @@ void notification_remove_notification(uint8_t id, bool closeAutomatically)
 
 		if (refresh)
 		{
-			menu_hide();
+			actions_menu_hide();
 			refresh_notification();
-			scroll_to_start();
+			scroll_to_notification_start();
 		}
 
 	}
 }
 
-inline Notification* notification_add_notification()
+static Notification* add_notification(void)
 {
 	if (numOfNotifications >= NOTIFICATION_SLOTS)
-		notification_remove_notification(0, false);
+		remove_notification(0, false);
 
 	uint8_t position = 0;
 	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
@@ -209,7 +202,7 @@ inline Notification* notification_add_notification()
 	return &notificationData[position];
 }
 
-Notification* notification_find_notification(int32_t id)
+static Notification* find_notification(int32_t id)
 {
 	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
 	{
@@ -220,66 +213,15 @@ Notification* notification_find_notification(int32_t id)
 	return NULL;
 }
 
-inline static void actions_init()
+static void send_message_action_menu_result(int action)
 {
-	for (int i = 0; i < 20; i++)
-	{
-		actions[i][0] = 0;
-	}
-}
-
-void menu_show()
-{
-	actions_init();
-	menu_layer_reload_data(actionsMenu);
-	MenuIndex firstItem;
-	firstItem.row = 0;
-	firstItem.section = 0;
-	menu_layer_set_selected_index(actionsMenu, firstItem, MenuRowAlignTop, false);
-	actionsMenuDisplayed = true;
-	layer_set_hidden((Layer*) menuBackground, false);
-}
-
-static void menu_hide()
-{
-	actionsMenuDisplayed = false;
-	layer_set_hidden((Layer*) menuBackground, true);
-
-}
-
-static void menu_up()
-{
-	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
-	if (index.row == 0)
-	{
-		menu_layer_set_selected_index(actionsMenu, MenuIndex(0,numOfActions - 1), MenuRowAlignCenter, true);
-		return;
-	}
-
-	menu_layer_set_selected_next(actionsMenu, true, MenuRowAlignCenter, true);
-}
-
-static void menu_down()
-{
-	MenuIndex index = menu_layer_get_selected_index(actionsMenu);
-	if (index.row == numOfActions - 1)
-	{
-		menu_layer_set_selected_index(actionsMenu, MenuIndex(0, 0), MenuRowAlignCenter, true);
-		return;
-	}
-
-	menu_layer_set_selected_next(actionsMenu, false, MenuRowAlignCenter, true);
-}
-
-void notification_action(int action)
-{
-	actionPicked = -1;
+	pickedAction = -1;
 
 	DictionaryIterator *iterator;
 	AppMessageResult result = app_message_outbox_begin(&iterator);
 	if (result != APP_MSG_OK)
 	{
-		actionPicked = action;
+		pickedAction = action;
 		return;
 	}
 
@@ -291,10 +233,23 @@ void notification_action(int action)
 	app_message_outbox_send();
 
 	set_busy_indicator(true);
-	menu_hide();
+	actions_menu_hide();
 }
 
-void notification_sendSelectAction(int32_t notificationId, bool hold)
+static void send_message_next_list_notification(int8_t change)
+{
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 2);
+	dict_write_uint8(iterator, 1, 2);
+	dict_write_int8(iterator, 2, change);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_message_outbox_send();
+
+	set_busy_indicator(true);
+}
+
+static void notification_sendSelectAction(int32_t notificationId, bool hold)
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -311,7 +266,7 @@ void notification_sendSelectAction(int32_t notificationId, bool hold)
 	set_busy_indicator(true);
 }
 
-inline void notification_dismiss(int32_t notificationId)
+static void dismiss_notification_from_phone(int32_t notificationId)
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -325,17 +280,17 @@ inline void notification_dismiss(int32_t notificationId)
 	set_busy_indicator(true);
 }
 
-void notification_back_single(ClickRecognizerRef recognizer, void* context)
+static void button_back_single(ClickRecognizerRef recognizer, void* context)
 {
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 	{
-		menu_hide();
+		actions_menu_hide();
 	}
 	else
 		window_stack_pop(true);
 }
 
-void notification_center_single(ClickRecognizerRef recognizer, void* context)
+static void button_center_single(ClickRecognizerRef recognizer, void* context)
 {
 	appIdle = false;
 
@@ -343,9 +298,9 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 	if (curNotification == NULL)
 		return;
 
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 	{
-		notification_action(menu_layer_get_selected_index(actionsMenu).row);
+		send_message_action_menu_result(actions_menu_get_selected_index());
 	}
 	else
 	{
@@ -354,17 +309,17 @@ void notification_center_single(ClickRecognizerRef recognizer, void* context)
 
 		if (curNotification->showMenuOnSelectPress)
 		{
-			numOfActions = curNotification->numOfActionsInDefaultMenu;
-			menu_show();
+			actions_menu_set_number_of_items(curNotification->numOfActionsInDefaultMenu);
+			actions_menu_show();
 		}
 
 		notification_sendSelectAction(curNotification->id, false);
 	}
 }
 
-void notification_center_hold(ClickRecognizerRef recognizer, void* context)
+static void button_center_hold(ClickRecognizerRef recognizer, void* context)
 {
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 		return;
 
 	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
@@ -376,18 +331,18 @@ void notification_center_hold(ClickRecognizerRef recognizer, void* context)
 
 	if (curNotification->showMenuOnSelectHold)
 	{
-		numOfActions = curNotification->numOfActionsInDefaultMenu;
-		menu_show();
+		actions_menu_set_number_of_items(curNotification->numOfActionsInDefaultMenu);
+		actions_menu_show();
 	}
 
 	notification_sendSelectAction(curNotification->id, true);
 }
 
-void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
+static void button_up_raw_pressed(ClickRecognizerRef recognizer, void* context)
 {
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 	{
-		menu_up();
+		actions_menu_move_up();
 	}
 	else
 	{
@@ -399,13 +354,14 @@ void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
 	skippedUpPresses = 0;
 
 }
-void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
+
+static void button_down_raw_pressed(ClickRecognizerRef recognizer, void* context)
 {
 	app_log(0, "notify", 0, "%d", heap_bytes_free());
 
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 	{
-		menu_down();
+		actions_menu_move_down();
 	}
 	else
 	{
@@ -416,28 +372,31 @@ void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
 	downPressed = true;
 	skippedDownPresses = 0;
 }
-void notification_up_rawReleased(ClickRecognizerRef recognizer, void* context)
+
+static void button_up_raw_released(ClickRecognizerRef recognizer, void* context)
 {
 	upPressed = false;
 }
-void notification_down_rawReleased(ClickRecognizerRef recognizer, void* context)
+
+static void button_down_raw_released(ClickRecognizerRef recognizer, void* context)
 {
 	downPressed = false;
 }
-void notification_up_click_proxy(ClickRecognizerRef recognizer, void* context)
+
+static void button_up_click_proxy(ClickRecognizerRef recognizer, void* context)
 {
 	if (upPressed)
 	{
-		if (actionsMenuDisplayed)
+		if (actions_menu_is_displayed())
 		{
-			menu_up();
+			actions_menu_move_up();
 			return;
 		}
 
 		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
 		if (skippedUpPresses == 1 )
 		{
-			scroll_by(50);
+			scroll_notification_by(50);
 			skippedUpPresses = 0;
 		}
 		else
@@ -446,13 +405,13 @@ void notification_up_click_proxy(ClickRecognizerRef recognizer, void* context)
 		}
 	}
 }
-void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
+static void button_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 {
 	if (downPressed)
 	{
-		if (actionsMenuDisplayed)
+		if (actions_menu_is_displayed())
 		{
-			menu_down();
+			actions_menu_move_down();
 			return;
 		}
 
@@ -460,7 +419,7 @@ void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 		//Scroll layer can't handle being pressed every 50ms, so we only use 1/2 of the presses.
 		if (skippedDownPresses == 1 )
 		{
-			scroll_by(-50);
+			scroll_notification_by(-50);
 		}
 		else
 		{
@@ -469,9 +428,9 @@ void notification_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 	}
 }
 
-void notification_up_double(ClickRecognizerRef recognizer, void* context)
+static void button_up_double(ClickRecognizerRef recognizer, void* context)
 {
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 		return;
 
 	if (pickedNotification == 0)
@@ -479,15 +438,7 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 		Notification data = notificationData[notificationPositions[pickedNotification]];
 		if (data.inList && !busy)
 		{
-			DictionaryIterator *iterator;
-			app_message_outbox_begin(&iterator);
-			dict_write_uint8(iterator, 0, 2);
-			dict_write_uint8(iterator, 1, 2);
-			dict_write_int8(iterator, 2, -1);
-			app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-			app_message_outbox_send();
-
-			set_busy_indicator(true);
+			send_message_next_list_notification(-1);
 			return;
 		}
 	}
@@ -504,12 +455,12 @@ void notification_up_double(ClickRecognizerRef recognizer, void* context)
 		pickedNotification--;
 
 	refresh_notification();
-	scroll_to_start();
+	scroll_to_notification_start();
 }
 
-void notification_down_double(ClickRecognizerRef recognizer, void* context)
+static void button_down_double(ClickRecognizerRef recognizer, void* context)
 {
-	if (actionsMenuDisplayed)
+	if (actions_menu_is_displayed())
 		return;
 
 	if (pickedNotification == numOfNotifications - 1)
@@ -517,15 +468,7 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 		Notification data = notificationData[notificationPositions[pickedNotification]];
 		if (data.inList && !busy)
 		{
-			DictionaryIterator *iterator;
-			app_message_outbox_begin(&iterator);
-			dict_write_uint8(iterator, 0, 2);
-			dict_write_uint8(iterator, 1, 2);
-			dict_write_int8(iterator, 2, 1);
-			app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-			app_message_outbox_send();
-
-			set_busy_indicator(true);
+			send_message_next_list_notification(1);
 			return;
 		}
 	}
@@ -542,58 +485,31 @@ void notification_down_double(ClickRecognizerRef recognizer, void* context)
 		pickedNotification++;
 
 	refresh_notification();
-	scroll_to_start();
+	scroll_to_notification_start();
 }
 
-void registerButtons(void* context) {
-	window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) notification_center_single);
-	window_single_click_subscribe(BUTTON_ID_BACK, (ClickHandler) notification_back_single);
+static void registerButtons(void* context) {
+	window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) button_center_single);
+	window_single_click_subscribe(BUTTON_ID_BACK, (ClickHandler) button_back_single);
 
-	window_multi_click_subscribe(BUTTON_ID_UP, 2, 2, 150, false, (ClickHandler) notification_up_double);
-	window_multi_click_subscribe(BUTTON_ID_DOWN, 2, 2, 150, false, (ClickHandler) notification_down_double);
+	window_multi_click_subscribe(BUTTON_ID_UP, 2, 2, 150, false, (ClickHandler) button_up_double);
+	window_multi_click_subscribe(BUTTON_ID_DOWN, 2, 2, 150, false, (ClickHandler) button_down_double);
 
-	window_raw_click_subscribe(BUTTON_ID_UP, (ClickHandler) notification_up_rawPressed, (ClickHandler) notification_up_rawReleased, NULL);
-	window_raw_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) notification_down_rawPressed, (ClickHandler) notification_down_rawReleased, NULL);
+	window_raw_click_subscribe(BUTTON_ID_UP, (ClickHandler) button_up_raw_pressed, (ClickHandler) button_up_raw_released, NULL);
+	window_raw_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) button_down_raw_pressed, (ClickHandler) button_down_raw_released, NULL);
 
-	window_long_click_subscribe(BUTTON_ID_SELECT, 500, (ClickHandler) notification_center_hold, NULL);
+	window_long_click_subscribe(BUTTON_ID_SELECT, 500, (ClickHandler) button_center_hold, NULL);
 
-	window_single_repeating_click_subscribe(BUTTON_ID_UP, 50, (ClickHandler) notification_up_click_proxy);
-	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 50, (ClickHandler) notification_down_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_UP, 50, (ClickHandler) button_up_click_proxy);
+	window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 50, (ClickHandler) button_down_click_proxy);
 }
 
-static void menu_paint_background(Layer *layer, GContext *ctx)
-{
-	graphics_context_set_fill_color(ctx, GColorBlack);
-	graphics_fill_rect(ctx, GRect(0, 0, 144 - 18, 168 - 34), 0, GCornerNone);
-	graphics_context_set_fill_color(ctx, GColorWhite);
-	graphics_fill_rect(ctx, GRect(1, 1, 144 - 20, 168 - 36), 0, GCornerNone);
-
-}
-
-static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
-	return 1;
-}
-
-static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
-	return numOfActions;
-}
-
-
-static int16_t menu_get_row_height_callback(MenuLayer *me,  MenuIndex *cell_index, void *data) {
-	return 30;
-}
-
-static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-	graphics_context_set_text_color(ctx, GColorBlack);
-	graphics_draw_text(ctx, actions[cell_index->row], fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(5, 0, 144 - 20 - 10, 27), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-}
-
-void vibration_stopped(void* data)
+static void vibration_stopped(void* data)
 {
 	vibrating = false;
 }
 
-inline void notification_newNotification(DictionaryIterator *received)
+static void received_message_new_notification(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 
@@ -609,10 +525,10 @@ inline void notification_newNotification(DictionaryIterator *received)
 	if (newPeriodicVibration < periodicVibrationPeriod || periodicVibrationPeriod == 0)
 		periodicVibrationPeriod = newPeriodicVibration;
 
-	Notification* notification = notification_find_notification(id);
+	Notification* notification = find_notification(id);
 	if (notification == NULL)
 	{
-		notification = notification_add_notification();
+		notification = add_notification();
 
 		if (!inList)
 		{
@@ -670,26 +586,26 @@ inline void notification_newNotification(DictionaryIterator *received)
 
 			if (entry->inList)
 			{
-				notification_remove_notification(i, false);
+				remove_notification(i, false);
 				i--;
 			}
 		}
 	}
 
-	if (autoSwitch && !actionsMenuDisplayed)
+	if (autoSwitch && !actions_menu_is_displayed())
 		pickedNotification = numOfNotifications - 1;
 
 	if (pickedNotification == numOfNotifications - 1)
 	{
 		refresh_notification();
-		scroll_to_start();
+		scroll_to_notification_start();
 	}
 
 	set_busy_indicator(false);
 
 }
 
-inline void notification_gotDismiss(DictionaryIterator *received)
+static void received_message_dismiss(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 	for (int i = 0; i < numOfNotifications; i++)
@@ -698,7 +614,7 @@ inline void notification_gotDismiss(DictionaryIterator *received)
 		if (entry.id != id)
 			continue;
 
-		notification_remove_notification(i, true);
+		remove_notification(i, true);
 
 		set_busy_indicator(false);
 
@@ -706,11 +622,11 @@ inline void notification_gotDismiss(DictionaryIterator *received)
 	}
 }
 
-inline void notification_gotMoreText(DictionaryIterator *received)
+static void received_message_more_text(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
 
-	Notification* notification = notification_find_notification(id);
+	Notification* notification = find_notification(id);
 	if (notification == NULL)
 		return;
 
@@ -721,38 +637,15 @@ inline void notification_gotMoreText(DictionaryIterator *received)
 		refresh_notification();
 }
 
-inline void notification_gotActionListItems(DictionaryIterator *received)
+static void received_message_notification_list_items(DictionaryIterator *received)
 {
-	uint8_t firstId = dict_find(received, 2)->value->uint8;
-	numOfActions = dict_find(received,3)->value->uint8;
-	uint8_t* text = dict_find(received,4)->value->data;
-
-
-	uint8_t packetSize = numOfActions - firstId;
-
-	if (firstId == 0)
-	{
-		if (!actionsMenuDisplayed)
-			menu_show();
-
+	if (actions_menu_got_items(received))
 		set_busy_indicator(false);
-	}
-
-	if (packetSize > 4)
-		packetSize = 4;
-
-	for (int i = 0; i < packetSize; i++)
-	{
-		memcpy(actions[i + firstId], &text[i*19],  19);
-	}
-
-	if (actionsMenuDisplayed)
-		menu_layer_reload_data(actionsMenu);
 }
 
 
 
-void notification_received_data(uint8_t module, uint8_t id, DictionaryIterator *received) {
+void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIterator *received) {
 	if (module == 0 && id == 1)
 	{
 		set_busy_indicator(false);
@@ -760,27 +653,27 @@ void notification_received_data(uint8_t module, uint8_t id, DictionaryIterator *
 	else if (module == 1)
 	{
 		if (id == 0)
-			notification_newNotification(received);
+			received_message_new_notification(received);
 		else if (id == 1)
-			notification_gotMoreText(received);
+			received_message_more_text(received);
 	}
 	else if (module == 3 && id == 0)
 	{
-		notification_gotDismiss(received);
+		received_message_dismiss(received);
 	}
 	else if (module == 4 && id == 0)
 	{
-		notification_gotActionListItems(received);
+		received_message_notification_list_items(received);
 	}
 }
 
-void notification_data_sent()
+void notification_window_data_sent(void)
 {
-	if (actionPicked > -1)
-		notification_action(actionPicked);
+	if (pickedAction > -1)
+		send_message_action_menu_result(pickedAction);
 }
 
-void statusbarback_paint(Layer *layer, GContext *ctx)
+static void statusbarback_paint(Layer *layer, GContext *ctx)
 {
 	graphics_context_set_fill_color(ctx, GColorBlack);
 	graphics_fill_rect(ctx, GRect(0, 0, 144, 16), 0, GCornerNone);
@@ -790,7 +683,7 @@ void statusbarback_paint(Layer *layer, GContext *ctx)
 }
 
 
-void circles_paint(Layer *layer, GContext *ctx)
+static void circles_paint(Layer *layer, GContext *ctx)
 {
 	graphics_context_set_stroke_color(ctx, GColorWhite);
 	graphics_context_set_fill_color(ctx, GColorWhite);
@@ -807,7 +700,7 @@ void circles_paint(Layer *layer, GContext *ctx)
 	}
 }
 
-void updateStatusClock()
+static void updateStatusClock(void)
 {
 	time_t now = time(NULL);
 	struct tm* lTime = localtime(&now);
@@ -823,7 +716,7 @@ void updateStatusClock()
 	text_layer_set_text(statusClock, clockText);
 }
 
-void accelerometer_shake(AccelAxisType axis, int32_t direction)
+static void accelerometer_shake(AccelAxisType axis, int32_t direction)
 {
 	if (vibrating) //Vibration seems to generate a lot of false positives
 		return;
@@ -836,12 +729,12 @@ void accelerometer_shake(AccelAxisType axis, int32_t direction)
 		if (curNotification == NULL)
 			return;
 
-		notification_dismiss(curNotification->id);
+		dismiss_notification_from_phone(curNotification->id);
 	}
 }
 
 
-void notification_second_tick()
+static void second_tick(void)
 {
 	elapsedTime++;
 
@@ -866,16 +759,28 @@ void notification_second_tick()
 	updateStatusClock();
 }
 
-void notification_appears(Window *window)
+
+static TextLayer* init_text_layer(int fontId)
+{
+	TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
+	text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
+	scroll_layer_add_child(scroll, (Layer*) layer);
+
+	text_layer_set_font(layer, fonts_get_system_font(config_getFontResource(fontId)));
+
+	return layer;
+}
+
+static void window_appears(Window *window)
 {
 	setCurWindow(1);
 
 	updateStatusClock();
 
-	tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) notification_second_tick);
+	tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) second_tick);
 }
 
-void notification_disappears(Window *window)
+static void window_disappears(Window *window)
 {
 	setCurWindow(-1);
 	tick_timer_service_unsubscribe();
@@ -889,19 +794,7 @@ void notification_disappears(Window *window)
 		closingMode = true;
 }
 
-
-TextLayer* init_text_layer(int fontId)
-{
-	TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
-	text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
-	scroll_layer_add_child(scroll, (Layer*) layer);
-
-	text_layer_set_font(layer, fonts_get_system_font(config_getFontResource(fontId)));
-
-	return layer;
-}
-
-void notification_load(Window *window)
+static void window_load(Window *window)
 {
 	app_log(0, "notify", 100, "%d", heap_bytes_free());
 
@@ -931,20 +824,8 @@ void notification_load(Window *window)
 	subTitle = init_text_layer(config_subtitleFont);
 	text = init_text_layer(config_bodyFont);
 
-	menuBackground = layer_create(GRect(9, 25, 144 - 18, 168 - 34));
-	layer_set_update_proc(menuBackground, menu_paint_background);
-	layer_set_hidden((Layer*) menuBackground, true);
-	layer_add_child(topLayer, menuBackground);
-
-	actionsMenu = menu_layer_create(GRect(1, 1, 144 - 20, 168 - 36));
-	layer_add_child(menuBackground, (Layer*) actionsMenu);
-
-	menu_layer_set_callbacks(actionsMenu, NULL, (MenuLayerCallbacks) {
-		.get_num_sections = menu_get_num_sections_callback,
-		.get_num_rows = menu_get_num_rows_callback,
-		.get_cell_height = menu_get_row_height_callback,
-		.draw_row = menu_draw_row_callback,
-	});
+	actions_menu_init();
+	actions_menu_attach(topLayer);
 
 	if (config_invertColors)
 	{
@@ -960,7 +841,7 @@ void notification_load(Window *window)
 
 }
 
-void notification_unload(Window *window)
+static void window_unload(Window *window)
 {
 	layer_destroy(statusbar);
 	layer_destroy(circlesLayer);
@@ -970,8 +851,7 @@ void notification_unload(Window *window)
 	text_layer_destroy(statusClock);
 	scroll_layer_destroy(scroll);
 	gbitmap_destroy(busyIndicator);
-	layer_destroy(menuBackground);
-	menu_layer_destroy(actionsMenu);
+	actions_menu_deinit();
 
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
@@ -982,15 +862,15 @@ void notification_unload(Window *window)
 	window_destroy(window);
 }
 
-void notification_window_init()
+void notification_window_init(void)
 {
 	notifyWindow = window_create();
 
 	window_set_window_handlers(notifyWindow, (WindowHandlers) {
-		.appear = (WindowHandler)notification_appears,
-				.disappear = (WindowHandler) notification_disappears,
-				.load = (WindowHandler) notification_load,
-				.unload = (WindowHandler) notification_unload
+		.appear = (WindowHandler)window_appears,
+				.disappear = (WindowHandler) window_disappears,
+				.load = (WindowHandler) window_load,
+				.unload = (WindowHandler) window_unload
 	});
 
 
@@ -1006,7 +886,5 @@ void notification_window_init()
 	window_stack_push(notifyWindow, true);
 
 	if (!config_dontClose)
-			close_menu_window();
-	else
-			show_quit();
+		main_menu_close();
 }

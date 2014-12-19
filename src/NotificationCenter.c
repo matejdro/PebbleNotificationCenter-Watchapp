@@ -1,8 +1,8 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationsWindow.h"
-#include "MainMenu.h"
-#include "NotificationList.h"
+#include "MainMenuWindow.h"
+#include "NotificationListWindow.h"
 
 const uint16_t PROTOCOL_VERSION = 22;
 
@@ -27,7 +27,7 @@ bool main_noMenu;
 bool closingMode = false;
 bool loadingMode = false;
 
-const char* fonts[] = {
+static const char* fonts[] = {
 		FONT_KEY_GOTHIC_14,
 		FONT_KEY_GOTHIC_14_BOLD,
 		FONT_KEY_GOTHIC_18,
@@ -53,12 +53,12 @@ const char* config_getFontResource(int id)
 	return fonts[id];
 }
 
-bool canVibrate()
+bool canVibrate(void)
 {
 	return !config_disableVibration && (!config_dontVibrateWhenCharging || !battery_state_service_peek().is_plugged);
 }
 
-uint8_t getCurWindow()
+uint8_t getCurWindow(void)
 {
 	return curWindow;
 }
@@ -74,20 +74,20 @@ void switchWindow(uint8_t newWindow)
 	{
 	case 0:
 		curWindow = 0;
-		init_menu_window();
+		main_menu_init();
 		break;
 	case 1:
 		curWindow = 1;
-		notification_window_init(false);
+		notification_window_init();
 		break;
 	case 2:
 		curWindow = 2;
-		init_notification_list_window(false);
+		list_window_init();
 		break;
 	}
 }
 
-inline void received_config(DictionaryIterator *received)
+static void received_config(DictionaryIterator *received)
 {
 	uint8_t* data = dict_find(received, 2)->value->data;
 
@@ -133,7 +133,7 @@ inline void received_config(DictionaryIterator *received)
 
 }
 
-void received_data(DictionaryIterator *received, void *context) {
+static void received_data(DictionaryIterator *received, void *context) {
 	uint8_t destModule = dict_find(received, 0)->value->uint8;
 	uint8_t packetId = dict_find(received, 1)->value->uint8;
 	bool autoSwitch = dict_find(received, 999) != NULL;
@@ -157,7 +157,7 @@ void received_data(DictionaryIterator *received, void *context) {
 				return;
 		}
 
-		list_data_received(packetId, received);
+		list_window_data_received(packetId, received);
 
 	}
 	else
@@ -170,19 +170,19 @@ void received_data(DictionaryIterator *received, void *context) {
 				return;
 		}
 
-		notification_received_data(destModule, packetId, received);
+		notification_window_received_data(destModule, packetId, received);
 	}
 }
 
-void sent_data(DictionaryIterator *iterator, void *context)
+static void sent_data(DictionaryIterator *iterator, void *context)
 {
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
 
 	if (curWindow == 1)
-		notification_data_sent();
+		notification_window_data_sent();
 }
 
-void closeApp()
+void closeApp(void)
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);

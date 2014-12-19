@@ -31,9 +31,8 @@ extern bool loadingMode;
 
 void setCurWindow(uint8_t newWindow);
 void switchWindow(uint8_t newWindow);
-uint8_t getCurWindow();
+uint8_t getCurWindow(void);
 const char* config_getFontResource(int id);
-void closeApp();
-bool canVibrate();
-
+void closeApp(void);
+bool canVibrate(void);
 #endif /* NOTIFICATIONCENTER_H_ */
