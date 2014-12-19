@@ -25,6 +25,7 @@ typedef struct
 static uint32_t elapsedTime = 0;
 static bool appIdle = true;
 static bool vibrating = false;
+static bool lightOn = false;
 
 static uint16_t periodicVibrationPeriod = 0;
 
@@ -375,8 +376,6 @@ static void button_up_raw_pressed(ClickRecognizerRef recognizer, void* context)
 
 static void button_down_raw_pressed(ClickRecognizerRef recognizer, void* context)
 {
-	app_log(0, "notify", 0, "%d", heap_bytes_free());
-
 	if (actions_menu_is_displayed())
 	{
 		actions_menu_move_down();
@@ -577,7 +576,10 @@ static void received_message_new_notification(DictionaryIterator *received)
 			}
 
 			if (config_lightScreen)
-				light_enable_interaction();
+			{
+				lightOn = true;
+				light_enable(true);
+			}
 
 			appIdle = true;
 			elapsedTime = 0;
@@ -736,6 +738,7 @@ static void updateStatusClock(void)
 
 static void accelerometer_shake(AccelAxisType axis, int32_t direction)
 {
+
 	if (vibrating) //Vibration seems to generate a lot of false positives
 		return;
 
@@ -760,6 +763,12 @@ static void second_tick(void)
 	{
 		window_stack_pop(true);
 		return;
+	}
+
+	if (lightOn && elapsedTime >= config_lightTimeout)
+	{
+		lightOn = false;
+		light_enable(false);
 	}
 
 	if (periodicVibrationPeriod > 0 &&
@@ -800,8 +809,6 @@ static void window_appears(Window *window)
 
 static void window_load(Window *window)
 {
-	app_log(0, "notify", 100, "%d", heap_bytes_free());
-
 	busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
 
 	Layer* topLayer = window_get_root_layer(notifyWindow);
@@ -841,7 +848,6 @@ static void window_load(Window *window)
 		accel_tap_service_subscribe(accelerometer_shake);
 
 	refresh_notification();
-	app_log(0, "notify", 200, "%d", heap_bytes_free());
 
 }
 

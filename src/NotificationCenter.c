@@ -4,7 +4,7 @@
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 
-const uint16_t PROTOCOL_VERSION = 23;
+const uint16_t PROTOCOL_VERSION = 24;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
@@ -14,6 +14,7 @@ uint8_t config_subtitleFont;
 uint8_t config_bodyFont;
 uint16_t config_timeout;
 uint16_t config_periodicTimeout;
+uint8_t config_lightTimeout;
 bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
@@ -117,6 +118,7 @@ static void received_config(DictionaryIterator *received)
 
 	config_shakeAction = data[10];
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);
+	config_lightTimeout = data[5];
 
 	bool newInvertColors = (data[7] & 0x40) != 0;
 	if (newInvertColors != config_invertColors)
