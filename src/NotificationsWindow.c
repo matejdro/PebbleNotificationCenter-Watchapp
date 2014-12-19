@@ -3,6 +3,7 @@
 #include "NotificationCenter.h"
 #include "MainMenuWindow.h"
 #include "ActionsMenu.h"
+#include "tertiary_text.h"
 
 #define NOTIFICATION_SLOTS 5
 
@@ -16,7 +17,7 @@ typedef struct
 	uint8_t numOfActionsInDefaultMenu;
 	char title[31];
 	char subTitle[31];
-	char text[901];
+	char text[851];
 
 } Notification;
 
@@ -146,6 +147,7 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
 {
 	if (numOfNotifications <= 1 && closeAutomatically)
 	{
+		tertiary_text_window_close();
 		window_stack_pop(true);
 		return;
 	}
@@ -171,6 +173,7 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
 		if (refresh)
 		{
 			actions_menu_hide();
+			tertiary_text_window_close();
 			refresh_notification();
 			scroll_to_notification_start();
 		}
@@ -234,6 +237,19 @@ static void send_message_action_menu_result(int action)
 
 	set_busy_indicator(true);
 	actions_menu_hide();
+}
+
+void send_message_reply_writing_result(char* text)
+{
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 4);
+	dict_write_uint8(iterator, 1, 3);
+	dict_write_cstring(iterator, 2, text);
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_message_outbox_send();
+
+	set_busy_indicator(true);
 }
 
 static void send_message_next_list_notification(int8_t change)
@@ -310,6 +326,7 @@ static void button_center_single(ClickRecognizerRef recognizer, void* context)
 		if (curNotification->showMenuOnSelectPress)
 		{
 			actions_menu_set_number_of_items(curNotification->numOfActionsInDefaultMenu);
+			actions_menu_reset_text();
 			actions_menu_show();
 		}
 
@@ -332,6 +349,7 @@ static void button_center_hold(ClickRecognizerRef recognizer, void* context)
 	if (curNotification->showMenuOnSelectHold)
 	{
 		actions_menu_set_number_of_items(curNotification->numOfActionsInDefaultMenu);
+		actions_menu_reset_text();
 		actions_menu_show();
 	}
 
@@ -780,20 +798,6 @@ static void window_appears(Window *window)
 	tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) second_tick);
 }
 
-static void window_disappears(Window *window)
-{
-	setCurWindow(-1);
-	tick_timer_service_unsubscribe();
-
-	if (main_noMenu && config_dontClose)
-	{
-		closeApp();
-	}
-
-	if (main_noMenu)
-		closingMode = true;
-}
-
 static void window_load(Window *window)
 {
 	app_log(0, "notify", 100, "%d", heap_bytes_free());
@@ -860,6 +864,17 @@ static void window_unload(Window *window)
 		accel_tap_service_unsubscribe();
 
 	window_destroy(window);
+	setCurWindow(-1);
+
+	tick_timer_service_unsubscribe();
+
+	if (main_noMenu && config_dontClose)
+	{
+		closeApp();
+	}
+
+	if (main_noMenu)
+		closingMode = true;
 }
 
 void notification_window_init(void)
@@ -868,7 +883,6 @@ void notification_window_init(void)
 
 	window_set_window_handlers(notifyWindow, (WindowHandlers) {
 		.appear = (WindowHandler)window_appears,
-				.disappear = (WindowHandler) window_disappears,
 				.load = (WindowHandler) window_load,
 				.unload = (WindowHandler) window_unload
 	});
