@@ -60,9 +60,9 @@ void show_old_android()
 
 void show_quit()
 {
-	layer_set_hidden((Layer *) menuLoadingLayer, true);
-	layer_set_hidden((Layer *) quitTitle, false);
-	layer_set_hidden((Layer *) quitText, false);
+	//layer_set_hidden((Layer *) menuLoadingLayer, true);
+	//layer_set_hidden((Layer *) quitTitle, false);
+	//layer_set_hidden((Layer *) quitText, false);
 }
 
 inline void reload_menu()
@@ -112,8 +112,6 @@ void update_notifications_enabled_setting()
 		settingsSectionItems[1].title = "Vibration ON";
 		settingsSectionItems[1].subtitle = "Press to disable";
 	}
-
-
 }
 
 
@@ -205,26 +203,27 @@ void show_menu()
 	layer_set_hidden((Layer *) quitText, true);
 }
 
+void closing_timer(void* data)
+{
+	closeApp();
+	app_timer_register(5000, closing_timer, NULL);
+}
+
 void window_unload(Window* me)
 {
-	gbitmap_destroy(currentIcon);
-	gbitmap_destroy(historyIcon);
-
-	text_layer_destroy(menuLoadingLayer);
-	text_layer_destroy(quitTitle);
-	text_layer_destroy(quitText);
-
-	if (inverterLayer != NULL)
-		inverter_layer_destroy(inverterLayer);
-
 	window_destroy(me);
 }
 
 void window_load(Window *me) {
+	firstAppear = false;
+}
+
+void menu_appears(Window* window)
+{
+	Layer* topLayer = window_get_root_layer(menuWindow);
+
 	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	historyIcon = gbitmap_create_with_resource(RESOURCE_ID_RECENT);
-
-	Layer* topLayer = window_get_root_layer(menuWindow);
 
 	menuLoadingLayer = text_layer_create(GRect(0, 0, 144, 168 - 16));
 	text_layer_set_text_alignment(menuLoadingLayer, GTextAlignmentCenter);
@@ -248,26 +247,6 @@ void window_load(Window *me) {
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
-}
-
-void close_menu_window()
-{
-	if (menuWindow != NULL)
-	{
-		window_stack_remove(menuWindow, false);
-		//menuWindow = NULL;
-	}
-}
-
-void closing_timer(void* data)
-{
-	closeApp();
-	app_timer_register(5000, closing_timer, NULL);
-}
-
-void menu_appears(Window* window)
-{
-	firstAppear = false;
 
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
@@ -279,6 +258,29 @@ void menu_appears(Window* window)
 	}
 }
 
+void menu_disappears(Window* me)
+{
+	gbitmap_destroy(currentIcon);
+	gbitmap_destroy(historyIcon);
+
+	text_layer_destroy(menuLoadingLayer);
+	text_layer_destroy(quitTitle);
+	text_layer_destroy(quitText);
+
+	if (inverterLayer != NULL)
+		inverter_layer_destroy(inverterLayer);
+}
+
+void close_menu_window()
+{
+	if (menuWindow != NULL)
+	{
+		window_stack_remove(menuWindow, false);
+		//menuWindow = NULL;
+	}
+}
+
+
 void init_menu_window()
 {
 	menuWindow = window_create();
@@ -287,6 +289,7 @@ void init_menu_window()
 		.load = window_load,
 		.unload = window_unload,
 		.appear = menu_appears,
+		.disappear = menu_disappears,
 	});
 
 	window_stack_push(menuWindow, true /* Animated */);

@@ -401,6 +401,8 @@ void notification_up_rawPressed(ClickRecognizerRef recognizer, void* context)
 }
 void notification_down_rawPressed(ClickRecognizerRef recognizer, void* context)
 {
+	app_log(0, "notify", 0, "%d", heap_bytes_free());
+
 	if (actionsMenuDisplayed)
 	{
 		menu_down();
@@ -901,6 +903,8 @@ TextLayer* init_text_layer(int fontId)
 
 void notification_load(Window *window)
 {
+	app_log(0, "notify", 100, "%d", heap_bytes_free());
+
 	busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
 
 	Layer* topLayer = window_get_root_layer(notifyWindow);
@@ -952,6 +956,8 @@ void notification_load(Window *window)
 		accel_tap_service_subscribe(accelerometer_shake);
 
 	refresh_notification();
+	app_log(0, "notify", 200, "%d", heap_bytes_free());
+
 }
 
 void notification_unload(Window *window)

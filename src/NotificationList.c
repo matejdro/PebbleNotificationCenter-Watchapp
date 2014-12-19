@@ -2,7 +2,7 @@
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
 
-#define LIST_STORAGE_SIZE 10
+#define LIST_STORAGE_SIZE 6
 
 Window* listWindow;
 
@@ -237,10 +237,10 @@ void requestAdditionalEntries() {
 	int emptyDown = getEmptySpacesDown();
 	int emptyUp = getEmptySpacesUp();
 
-	if (emptyDown < 6 && emptyDown <= emptyUp) {
+	if (emptyDown < LIST_STORAGE_SIZE / 2 && emptyDown <= emptyUp) {
 		uint8_t startingIndex = centerIndex + emptyDown;
 		requestNotification(startingIndex);
-	} else if (emptyUp < 6) {
+	} else if (emptyUp < LIST_STORAGE_SIZE / 2) {
 		uint8_t startingIndex = centerIndex - emptyUp;
 		requestNotification(startingIndex);
 	}
@@ -330,7 +330,14 @@ void list_data_received(int packetId, DictionaryIterator* data) {
 }
 
 void list_window_load(Window *me) {
-	allocateData();
+}
+
+void list_window_unload(Window *me) {
+	window_destroy(me);
+}
+
+void list_window_appear(Window* me) {
+	setCurWindow(2);
 
 	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
@@ -359,9 +366,17 @@ void list_window_load(Window *me) {
 
 	arrayCenterPos = 0;
 	centerIndex = 0;
+
+	ending = false;
+	pickedEntry = -1;
+	pickedMode = 0;
+
+	allocateData();
+	requestAdditionalEntries();
 }
 
-void list_window_unload(Window *me) {
+void list_window_disappear(Window* me)
+{
 	gbitmap_destroy(normalNotification);
 	gbitmap_destroy(ongoingNotification);
 
@@ -370,26 +385,18 @@ void list_window_unload(Window *me) {
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
 
-	window_destroy(me);
 	freeData();
-}
 
-void list_window_appear(Window* me) {
-	setCurWindow(2);
-
-	ending = false;
-	pickedEntry = -1;
-	pickedMode = 0;
-
-	requestAdditionalEntries();
 }
 
 void init_notification_list_window() {
 	listWindow = window_create();
 
-	window_set_window_handlers(listWindow, (WindowHandlers ) { .appear =
-					list_window_appear, .load = list_window_load, .unload =
-					list_window_unload
+	window_set_window_handlers(listWindow, (WindowHandlers ) {
+					.appear = list_window_appear,
+					.load = list_window_load,
+					.unload = list_window_unload,
+					.disappear = list_window_disappear
 
 			});
 
