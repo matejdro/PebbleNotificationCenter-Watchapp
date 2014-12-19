@@ -180,6 +180,8 @@ static void sent_data(DictionaryIterator *iterator, void *context)
 
 	if (curWindow == 1)
 		notification_window_data_sent();
+	else if (curWindow == 2)
+		list_window_data_sent();
 }
 
 void closeApp(void)

@@ -864,7 +864,6 @@ static void window_unload(Window *window)
 		accel_tap_service_unsubscribe();
 
 	window_destroy(window);
-	setCurWindow(-1);
 
 	tick_timer_service_unsubscribe();
 

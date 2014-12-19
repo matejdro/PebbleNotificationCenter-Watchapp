@@ -12,9 +12,8 @@ static int8_t arrayCenterPos = 0;
 static int16_t centerIndex = 0;
 
 static int16_t pickedEntry = -1;
-static uint8_t pickedMode = 0;
 
-static bool ending = false;
+static bool busy = false;
 static char** titles;
 static char** subtitles;
 static uint8_t* types;
@@ -208,20 +207,16 @@ static void requestNotification(uint16_t pos) {
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
-
-	ending = true;
 }
 
-static void sendpickedEntry(int16_t pos, uint8_t mode) {
-	if (ending) {
+static void sendpickedEntry(int16_t pos) {
+	DictionaryIterator *iterator;
+	AppMessageResult result = app_message_outbox_begin(&iterator);
+	if (result != APP_MSG_OK) {
 		pickedEntry = pos;
-		pickedMode = mode;
-
 		return;
 	}
 
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 2);
 	dict_write_uint8(iterator, 1, 1);
 	dict_write_uint16(iterator, 2, pos);
@@ -231,9 +226,6 @@ static void sendpickedEntry(int16_t pos, uint8_t mode) {
 }
 
 static void requestAdditionalEntries(void) {
-	if (ending)
-		return;
-
 	int emptyDown = getEmptySpacesDown();
 	int emptyUp = getEmptySpacesUp();
 
@@ -250,13 +242,13 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
 	return 1;
 }
 
-static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index,
-		void *data) {
+static uint16_t menu_get_num_rows_callback(MenuLayer *me,
+		uint16_t section_index, void *data) {
 	return numEntries;
 }
 
-static int16_t menu_get_row_height_callback(MenuLayer *me, MenuIndex *cell_index,
-		void *data) {
+static int16_t menu_get_row_height_callback(MenuLayer *me,
+		MenuIndex *cell_index, void *data) {
 	return 56;
 }
 
@@ -296,13 +288,16 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 	graphics_draw_bitmap_in_rect(ctx, image, GRect(1, 14, 31, 31));
 }
 
-static void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
-	sendpickedEntry(cell_index->row, 0);
+static void menu_select_callback(MenuLayer *me, MenuIndex *cell_index,
+		void *data) {
+	sendpickedEntry(cell_index->row);
 }
 
 static void receivedEntries(DictionaryIterator* data) {
 	uint16_t offset = dict_find(data, 2)->value->uint16;
 	numEntries = dict_find(data, 3)->value->uint16;
+
+	app_log(0, "list", 100, "%d %d, %d", offset, numEntries, convertToArrayPos(offset));
 
 	setType(offset, dict_find(data, 4)->value->uint8);
 	setTitle(offset, dict_find(data, 5)->value->cstring);
@@ -310,12 +305,14 @@ static void receivedEntries(DictionaryIterator* data) {
 	setDate(offset, dict_find(data, 7)->value->cstring);
 
 	menu_layer_reload_data(menuLayer);
-	ending = false;
+}
 
+void list_window_data_sent(void) {
 	if (pickedEntry >= 0) {
-		sendpickedEntry(pickedEntry, pickedMode);
+		sendpickedEntry(pickedEntry);
 		return;
 	}
+
 	requestAdditionalEntries();
 }
 
@@ -324,9 +321,7 @@ void list_window_data_received(int packetId, DictionaryIterator* data) {
 	case 0:
 		receivedEntries(data);
 		break;
-
 	}
-
 }
 
 static void window_appear(Window* me) {
@@ -357,19 +352,16 @@ static void window_appear(Window* me) {
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
 
-	arrayCenterPos = 0;
-	centerIndex = 0;
-
-	ending = false;
+	busy = false;
 	pickedEntry = -1;
-	pickedMode = 0;
 
 	allocateData();
+	menu_layer_set_selected_index(menuLayer, MenuIndex(0, centerIndex), MenuRowAlignCenter, false);
+
 	requestAdditionalEntries();
 }
 
-static void window_disappear(Window* me)
-{
+static void window_disappear(Window* me) {
 	gbitmap_destroy(normalNotification);
 	gbitmap_destroy(ongoingNotification);
 
@@ -383,6 +375,9 @@ static void window_disappear(Window* me)
 }
 
 static void window_load(Window *me) {
+	arrayCenterPos = 0;
+	centerIndex = 0;
+	numEntries = 0;
 }
 
 static void window_unload(Window *me) {
@@ -392,10 +387,8 @@ static void window_unload(Window *me) {
 void list_window_init(void) {
 	window = window_create();
 
-	window_set_window_handlers(window, (WindowHandlers ) {
-					.appear = window_appear,
-					.load = window_load,
-					.unload = window_unload,
+	window_set_window_handlers(window, (WindowHandlers ) { .appear =
+					window_appear, .load = window_load, .unload = window_unload,
 					.disappear = window_disappear
 
 			});

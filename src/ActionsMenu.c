@@ -132,7 +132,7 @@ bool actions_menu_got_items(DictionaryIterator* dictionary)
 		}
 		else if (!actions_menu_is_displayed())
 		{
-			void actions_menu_reset_text(void);
+			actions_menu_reset_text();
 			actions_menu_show();
 		}
 
