@@ -112,6 +112,9 @@ static void refresh_notification(void)
 
 	scroll_layer_set_content_size(scroll, GSize(144 - 4, verticalSize));
 
+	APP_LOG(0, "vertical %d", verticalSize);
+
+
 	layer_mark_dirty(circlesLayer);
 }
 
@@ -123,8 +126,9 @@ static void scroll_to_notification_start(void)
 	if (notification != NULL && notification->scrollToEnd)
 		scrollTo = -scroll_layer_get_content_size(scroll).h;
 
+	APP_LOG(0, "%d", scrollTo);
+
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), false);
-	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
 }
 
 static void scroll_notification_by(int16_t amount)
@@ -654,7 +658,12 @@ static void received_message_more_text(DictionaryIterator *received)
 	strcpy(notification->text + length, dict_find(received, 3)->value->cstring);
 
 	if (pickedNotification == numOfNotifications - 1)
+	{
 		refresh_notification();
+
+		if (notification->scrollToEnd)
+			scroll_to_notification_start();
+	}
 }
 
 static void received_message_notification_list_items(DictionaryIterator *received)
