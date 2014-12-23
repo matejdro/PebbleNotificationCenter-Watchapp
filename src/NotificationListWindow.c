@@ -297,8 +297,6 @@ static void receivedEntries(DictionaryIterator* data) {
 	uint16_t offset = dict_find(data, 2)->value->uint16;
 	numEntries = dict_find(data, 3)->value->uint16;
 
-	app_log(0, "list", 100, "%d %d, %d", offset, numEntries, convertToArrayPos(offset));
-
 	setType(offset, dict_find(data, 4)->value->uint8);
 	setTitle(offset, dict_find(data, 5)->value->cstring);
 	setSubtitle(offset, dict_find(data, 6)->value->cstring);

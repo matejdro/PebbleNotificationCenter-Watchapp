@@ -5,7 +5,8 @@
 #include "ActionsMenu.h"
 #include "tertiary_text.h"
 
-#define NOTIFICATION_SLOTS 5
+#define NOTIFICATION_SLOTS 10
+#define NOTIFICATION_MEMORY_STORAGE_SIZE 4700
 
 typedef struct
 {
@@ -15,10 +16,10 @@ typedef struct
 	bool showMenuOnSelectPress;
 	bool showMenuOnSelectHold;
 	uint8_t numOfActionsInDefaultMenu;
+	uint16_t textLength;
 	char title[31];
 	char subTitle[31];
-	char text[851];
-
+	char* text;
 } Notification;
 
 
@@ -46,9 +47,9 @@ static uint8_t numOfNotifications = 0;
 static uint8_t pickedNotification = 0;
 static int8_t pickedAction = -1;
 
-static Notification notificationData[NOTIFICATION_SLOTS];
-static uint8_t notificationPositions[NOTIFICATION_SLOTS];
-static bool notificationDataUsed[NOTIFICATION_SLOTS];
+static uint16_t freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
+
+static Notification* notificationData[NOTIFICATION_SLOTS];
 
 static ScrollLayer* scroll;
 
@@ -62,6 +63,7 @@ static TextLayer* subTitle;
 static TextLayer* text;
 
 static void registerButtons(void* context);
+static Notification* get_displayed_notification();
 
 static void refresh_notification(void)
 {
@@ -80,7 +82,7 @@ static void refresh_notification(void)
 	}
 	else
 	{
-		notification = &notificationData[notificationPositions[pickedNotification]];
+		notification = get_displayed_notification();
 		titleText = notification->title;
 		subtitleText = notification->subTitle;
 		bodyText = notification->text;
@@ -112,9 +114,6 @@ static void refresh_notification(void)
 
 	scroll_layer_set_content_size(scroll, GSize(144 - 4, verticalSize));
 
-	APP_LOG(0, "vertical %d", verticalSize);
-
-
 	layer_mark_dirty(circlesLayer);
 }
 
@@ -122,11 +121,9 @@ static void scroll_to_notification_start(void)
 {
 	int16_t scrollTo = 0;
 
-	Notification* notification = &notificationData[notificationPositions[pickedNotification]];;
+	Notification* notification = get_displayed_notification();
 	if (notification != NULL && notification->scrollToEnd)
 		scrollTo = -scroll_layer_get_content_size(scroll).h;
-
-	APP_LOG(0, "%d", scrollTo);
 
 	scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), false);
 }
@@ -148,6 +145,27 @@ static void set_busy_indicator(bool value)
 	layer_mark_dirty(statusbar);
 }
 
+static Notification* create_notification(uint16_t textLength)
+{
+	textLength++; //Reserve one byte for null character
+
+	Notification* notification = malloc(sizeof(Notification));
+	notification->textLength = textLength;
+	notification->text = malloc(sizeof(char) * textLength);
+
+	freeNotificationMemory -= sizeof(Notification) + sizeof(char) * textLength;
+
+	return notification;
+}
+
+static void destroy_notification(Notification* notification)
+{
+	freeNotificationMemory += sizeof(Notification) + sizeof(char) * notification->textLength;
+
+	free(notification->text);
+	free(notification);
+}
+
 static void remove_notification(uint8_t id, bool closeAutomatically)
 {
 	if (numOfNotifications <= 1 && closeAutomatically)
@@ -160,65 +178,67 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
 	if (numOfNotifications > 0)
 		numOfNotifications--;
 
-	uint8_t pos = notificationPositions[id];
-
-	notificationDataUsed[pos] = false;
+	destroy_notification(notificationData[id]);
 
 	for (int i = id; i < numOfNotifications; i++)
 	{
-		notificationPositions[i] = notificationPositions[i + 1];
+		notificationData[i] = notificationData[i + 1];
 	}
 
-	if (pickedNotification >= numOfNotifications && pickedNotification > 0)
+	bool differentNotification = pickedNotification == 0;
+
+	if (pickedNotification >= id && pickedNotification > 0)
 	{
-		bool refresh = (pickedNotification == id);
+		differentNotification |= (pickedNotification == id);
 
 		pickedNotification--;
-
-		if (refresh)
-		{
-			actions_menu_hide();
-			tertiary_text_window_close();
-			refresh_notification();
-			scroll_to_notification_start();
-		}
-
 	}
+
+	if (differentNotification)
+	{
+		actions_menu_hide();
+		tertiary_text_window_close();
+		refresh_notification();
+		scroll_to_notification_start();
+	}
+
 }
 
-static Notification* add_notification(void)
+static Notification* add_notification(uint16_t textSize)
 {
 	if (numOfNotifications >= NOTIFICATION_SLOTS)
 		remove_notification(0, false);
 
-	uint8_t position = 0;
-	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
-	{
-		if (!notificationDataUsed[i])
-		{
-			position = i;
-			break;
-		}
-	}
+	uint16_t totalSize = sizeof(Notification) + sizeof(char) * textSize;
+	while (freeNotificationMemory < totalSize)
+		remove_notification(0, false);
 
-	notificationDataUsed[position] = true;
-	notificationPositions[numOfNotifications] = position;
+	uint8_t position = numOfNotifications;
 	numOfNotifications++;
+
+	Notification* notification = create_notification(textSize);
+	notificationData[position] = notification;
 
 	layer_mark_dirty(circlesLayer);
 
-	return &notificationData[position];
+	return notification;
 }
 
 static Notification* find_notification(int32_t id)
 {
-	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
+	for (int i = 0; i < numOfNotifications; i++)
 	{
-		if (notificationDataUsed[i] && notificationData[i].id == id)
-			return &notificationData[i];
+		Notification* notification = notificationData[i];
+		if (notification != NULL && notification->id == id)
+			return notificationData[i];
 	}
 
 	return NULL;
+}
+
+static Notification* get_displayed_notification()
+{
+	return notificationData[pickedNotification];
 }
 
 static void send_message_action_menu_result(int action)
@@ -315,7 +335,7 @@ static void button_center_single(ClickRecognizerRef recognizer, void* context)
 {
 	appIdle = false;
 
-	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+	Notification* curNotification = get_displayed_notification();
 	if (curNotification == NULL)
 		return;
 
@@ -344,7 +364,7 @@ static void button_center_hold(ClickRecognizerRef recognizer, void* context)
 	if (actions_menu_is_displayed())
 		return;
 
-	Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+	Notification* curNotification = get_displayed_notification();
 	if (curNotification == NULL)
 		return;
 
@@ -456,8 +476,8 @@ static void button_up_double(ClickRecognizerRef recognizer, void* context)
 
 	if (pickedNotification == 0)
 	{
-		Notification data = notificationData[notificationPositions[pickedNotification]];
-		if (data.inList && !busy)
+		Notification* notification = get_displayed_notification();
+		if (notification->inList && !busy)
 		{
 			send_message_next_list_notification(-1);
 			return;
@@ -486,8 +506,8 @@ static void button_down_double(ClickRecognizerRef recognizer, void* context)
 
 	if (pickedNotification == numOfNotifications - 1)
 	{
-		Notification data = notificationData[notificationPositions[pickedNotification]];
-		if (data.inList && !busy)
+		Notification* notification = get_displayed_notification();
+		if (notification->inList && !busy)
 		{
 			send_message_next_list_notification(1);
 			return;
@@ -540,16 +560,18 @@ static void received_message_new_notification(DictionaryIterator *received)
 	bool inList = (flags & 0x02) != 0;
 	bool autoSwitch = (flags & 0x04) != 0;
 
-	uint8_t numOfVibrationBytes = configBytes[4];
-
 	uint16_t newPeriodicVibration = configBytes[1] << 8 | configBytes[2];
 	if (newPeriodicVibration < periodicVibrationPeriod || periodicVibrationPeriod == 0)
 		periodicVibrationPeriod = newPeriodicVibration;
 
+	uint16_t textSize = configBytes[4] << 8 | configBytes[5];
+
+	uint8_t numOfVibrationBytes = configBytes[6];
+
 	Notification* notification = find_notification(id);
 	if (notification == NULL)
 	{
-		notification = add_notification();
+		notification = add_notification(textSize);
 
 		if (!inList)
 		{
@@ -561,7 +583,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
-					segments[i / 2] = configBytes[5 +i] | (configBytes[6 +i] << 8);
+					segments[i / 2] = configBytes[7 +i] | (configBytes[8 +i] << 8);
 					totalLength += segments[i / 2];
 					if (i % 4 == 0 && segments[i / 2] > 0)
 						vibrate = true;
@@ -604,7 +626,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 	{
 		for (int i = 0; i < numOfNotifications; i++)
 		{
-			Notification* entry = &notificationData[notificationPositions[i]];
+			Notification* entry = notificationData[i];
 			if (entry->id == notification->id)
 				continue;
 
@@ -634,8 +656,8 @@ static void received_message_dismiss(DictionaryIterator *received)
 	int32_t id = dict_find(received, 2)->value->int32;
 	for (int i = 0; i < numOfNotifications; i++)
 	{
-		Notification entry = notificationData[notificationPositions[i]];
-		if (entry.id != id)
+		Notification* entry = notificationData[i];
+		if (entry->id != id)
 			continue;
 
 		remove_notification(i, true);
@@ -717,15 +739,37 @@ static void circles_paint(Layer *layer, GContext *ctx)
 	graphics_context_set_stroke_color(ctx, GColorWhite);
 	graphics_context_set_fill_color(ctx, GColorWhite);
 
-	int x = 9;
+	int x;
+	int xDiff;
+	int diameter;
+
+	if (numOfNotifications < 7)
+	{
+		x = 9;
+		xDiff = 11;
+		diameter = 4;
+	}
+	else if (numOfNotifications < 9)
+	{
+		x = 7;
+		xDiff = 9;
+		diameter = 3;
+	}
+	else
+	{
+		x = 5;
+		xDiff = 7;
+		diameter = 2;
+	}
+
 	for (int i = 0; i < numOfNotifications; i++)
 	{
 		if (pickedNotification == i)
-			graphics_fill_circle(ctx, GPoint(x, 8), 4);
+			graphics_fill_circle(ctx, GPoint(x, 8), diameter);
 		else
-			graphics_draw_circle(ctx, GPoint(x, 8), 4);
+			graphics_draw_circle(ctx, GPoint(x, 8), diameter);
 
-		x += 11;
+		x += xDiff;
 	}
 }
 
@@ -755,7 +799,7 @@ static void accelerometer_shake(AccelAxisType axis, int32_t direction)
 		appIdle = false;
 	else if (config_shakeAction == 2)
 	{
-		Notification* curNotification = &notificationData[notificationPositions[pickedNotification]];
+		Notification* curNotification = get_displayed_notification();
 		if (curNotification == NULL)
 			return;
 
@@ -783,7 +827,7 @@ static void second_tick(void)
 	if (periodicVibrationPeriod > 0 &&
 		appIdle &&
 		elapsedTime > 0 && elapsedTime % periodicVibrationPeriod == 0 &&
-		!notificationData[notificationPositions[pickedNotification]].inList &&
+		!get_displayed_notification()->inList &&
 		canVibrate() &&
 		(config_periodicTimeout == 0 || elapsedTime < config_periodicTimeout))
 	{
@@ -903,10 +947,6 @@ void notification_window_init(void)
 
 
 	numOfNotifications = 0;
-	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
-	{
-		notificationDataUsed[i] = false;
-	}
 
 	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
 
