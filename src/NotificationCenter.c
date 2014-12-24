@@ -136,6 +136,8 @@ static void received_config(DictionaryIterator *received)
 }
 
 static void received_data(DictionaryIterator *received, void *context) {
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+
 	uint8_t destModule = dict_find(received, 0)->value->uint8;
 	uint8_t packetId = dict_find(received, 1)->value->uint8;
 	bool autoSwitch = dict_find(received, 999) != NULL;
