@@ -47,7 +47,7 @@ static uint8_t numOfNotifications = 0;
 static uint8_t pickedNotification = 0;
 static int8_t pickedAction = -1;
 
-static uint16_t freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
+static uint16_t freeNotificationMemory;
 
 static Notification* notificationData[NOTIFICATION_SLOTS];
 
@@ -160,6 +160,9 @@ static Notification* create_notification(uint16_t textLength)
 
 static void destroy_notification(Notification* notification)
 {
+	if (notification == NULL)
+		return;
+
 	freeNotificationMemory += sizeof(Notification) + sizeof(char) * notification->textLength;
 
 	free(notification->text);
@@ -185,6 +188,8 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
 		notificationData[i] = notificationData[i + 1];
 	}
 
+	notificationData[numOfNotifications] = NULL;
+
 	bool differentNotification = pickedNotification == 0;
 
 	if (pickedNotification >= id && pickedNotification > 0)
@@ -209,7 +214,7 @@ static Notification* add_notification(uint16_t textSize)
 	if (numOfNotifications >= NOTIFICATION_SLOTS)
 		remove_notification(0, false);
 
-	uint16_t totalSize = sizeof(Notification) + sizeof(char) * textSize;
+	uint16_t totalSize = sizeof(Notification) + sizeof(char) * (textSize + 1);
 	while (freeNotificationMemory < totalSize)
 		remove_notification(0, false);
 
@@ -900,12 +905,17 @@ static void window_load(Window *window)
 	if (config_shakeAction > 0)
 		accel_tap_service_subscribe(accelerometer_shake);
 
+	freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
+	numOfNotifications = 0;
+
 	refresh_notification();
 
 }
 
 static void window_unload(Window *window)
 {
+	numOfNotifications = 0;
+
 	layer_destroy(statusbar);
 	layer_destroy(circlesLayer);
 	text_layer_destroy(title);
@@ -933,6 +943,11 @@ static void window_unload(Window *window)
 
 	if (main_noMenu)
 		closingMode = true;
+
+	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
+	{
+		destroy_notification(notificationData[i]);
+	}
 }
 
 void notification_window_init(void)
@@ -945,8 +960,6 @@ void notification_window_init(void)
 				.unload = (WindowHandler) window_unload
 	});
 
-
-	numOfNotifications = 0;
 
 	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
 
