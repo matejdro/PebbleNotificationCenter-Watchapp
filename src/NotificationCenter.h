@@ -23,7 +23,6 @@ extern bool config_dontVibrateWhenCharging;
 extern bool config_invertColors;
 extern bool config_disableNotifications;
 extern bool config_disableVibration;
-extern uint8_t config_shakeAction;
 extern uint8_t config_lightTimeout;
 extern bool main_noMenu;
 

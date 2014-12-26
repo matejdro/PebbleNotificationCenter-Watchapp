@@ -15,6 +15,7 @@ typedef struct
 	bool scrollToEnd;
 	bool showMenuOnSelectPress;
 	bool showMenuOnSelectHold;
+	uint8_t shakeAction;
 	uint8_t numOfActionsInDefaultMenu;
 	uint16_t textLength;
 	char title[31];
@@ -27,6 +28,7 @@ static uint32_t elapsedTime = 0;
 static bool appIdle = true;
 static bool vibrating = false;
 static bool lightOn = false;
+static bool autoSwitch = false;
 
 static uint16_t periodicVibrationPeriod = 0;
 
@@ -295,7 +297,7 @@ static void send_message_next_list_notification(int8_t change)
 	set_busy_indicator(true);
 }
 
-static void notification_sendSelectAction(int32_t notificationId, bool hold)
+static void notification_sendSelectAction(int32_t notificationId, uint8_t actionType)
 {
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -303,23 +305,8 @@ static void notification_sendSelectAction(int32_t notificationId, bool hold)
 	dict_write_uint8(iterator, 1, 0);
 
 	dict_write_int32(iterator, 2, notificationId);
-	if (hold)
-		dict_write_uint8(iterator, 3, 1);
+	dict_write_uint8(iterator, 3, actionType);
 
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
-
-	set_busy_indicator(true);
-}
-
-static void dismiss_notification_from_phone(int32_t notificationId)
-{
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 4);
-	dict_write_uint8(iterator, 1, 1);
-
-	dict_write_int32(iterator, 2, notificationId);
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
@@ -360,7 +347,7 @@ static void button_center_single(ClickRecognizerRef recognizer, void* context)
 			actions_menu_show();
 		}
 
-		notification_sendSelectAction(curNotification->id, false);
+		notification_sendSelectAction(curNotification->id, 0);
 	}
 }
 
@@ -383,7 +370,7 @@ static void button_center_hold(ClickRecognizerRef recognizer, void* context)
 		actions_menu_show();
 	}
 
-	notification_sendSelectAction(curNotification->id, true);
+	notification_sendSelectAction(curNotification->id, 1);
 }
 
 static void button_up_raw_pressed(ClickRecognizerRef recognizer, void* context)
@@ -563,7 +550,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
 	uint8_t flags = configBytes[0];
 	bool inList = (flags & 0x02) != 0;
-	bool autoSwitch = (flags & 0x04) != 0;
+	autoSwitch |= (flags & 0x04) != 0;
 
 	uint16_t newPeriodicVibration = configBytes[1] << 8 | configBytes[2];
 	if (newPeriodicVibration < periodicVibrationPeriod || periodicVibrationPeriod == 0)
@@ -571,7 +558,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
 	uint16_t textSize = configBytes[4] << 8 | configBytes[5];
 
-	uint8_t numOfVibrationBytes = configBytes[6];
+	uint8_t numOfVibrationBytes = configBytes[7];
 
 	Notification* notification = find_notification(id);
 	if (notification == NULL)
@@ -588,7 +575,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
-					segments[i / 2] = configBytes[7 +i] | (configBytes[8 +i] << 8);
+					segments[i / 2] = configBytes[8 +i] | (configBytes[9 +i] << 8);
 					totalLength += segments[i / 2];
 					if (i % 4 == 0 && segments[i / 2] > 0)
 						vibrate = true;
@@ -622,6 +609,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 	notification->scrollToEnd = (flags & 0x08) != 0;
 	notification->showMenuOnSelectPress = (flags & 0x10) != 0;
 	notification->showMenuOnSelectHold = (flags & 0x20) != 0;
+	notification->shakeAction = configBytes[6];
 	notification->numOfActionsInDefaultMenu = configBytes[3];
 	strcpy(notification->title, dict_find(received, 4)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
@@ -653,7 +641,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 	}
 
 	set_busy_indicator(false);
-
+	autoSwitch = false;
 }
 
 static void received_message_dismiss(DictionaryIterator *received)
@@ -796,20 +784,43 @@ static void updateStatusClock(void)
 
 static void accelerometer_shake(AccelAxisType axis, int32_t direction)
 {
-
 	if (vibrating) //Vibration seems to generate a lot of false positives
 		return;
 
-	if (config_shakeAction == 1)
-		appIdle = false;
-	else if (config_shakeAction == 2)
-	{
-		Notification* curNotification = get_displayed_notification();
-		if (curNotification == NULL)
-			return;
+	Notification* notification = get_displayed_notification();
+	if (notification == NULL)
+		return;
 
-		dismiss_notification_from_phone(curNotification->id);
+	uint8_t shakeAction = notification->shakeAction;
+
+	if (shakeAction == 0)
+	{
+		return;
 	}
+	else if (shakeAction == 60)
+	{
+		appIdle = false;
+		return;
+	}
+	else if (shakeAction == 61)
+	{
+		appIdle = false;
+		autoSwitch = true;
+		return;
+	}
+	else if (shakeAction == 62)
+	{
+		remove_notification(pickedNotification, true);
+		return;
+	}
+	else if (shakeAction == 2)
+	{
+		actions_menu_set_number_of_items(notification->numOfActionsInDefaultMenu);
+		actions_menu_reset_text();
+		actions_menu_show();
+	}
+
+	notification_sendSelectAction(notification->id, 2);
 }
 
 
@@ -902,8 +913,7 @@ static void window_load(Window *window)
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
 
-	if (config_shakeAction > 0)
-		accel_tap_service_subscribe(accelerometer_shake);
+	accel_tap_service_subscribe(accelerometer_shake);
 
 	freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
 	numOfNotifications = 0;
@@ -929,8 +939,7 @@ static void window_unload(Window *window)
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
 
-	if (config_shakeAction > 0)
-		accel_tap_service_unsubscribe();
+	accel_tap_service_unsubscribe();
 
 	window_destroy(window);
 

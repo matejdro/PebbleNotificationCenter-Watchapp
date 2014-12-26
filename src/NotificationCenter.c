@@ -22,7 +22,6 @@ bool config_dontVibrateWhenCharging;
 bool config_invertColors;
 bool config_disableNotifications;
 bool config_disableVibration;
-uint8_t config_shakeAction;
 bool main_noMenu;
 
 bool closingMode = false;
@@ -116,7 +115,6 @@ static void received_config(DictionaryIterator *received)
 	config_disableNotifications = (data[7] & 0x80) != 0;
 	config_disableVibration = (data[7] & 0x01) != 0;
 
-	config_shakeAction = data[10];
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);
 	config_lightTimeout = data[5];
 
