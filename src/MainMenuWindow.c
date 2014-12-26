@@ -204,8 +204,11 @@ static void settings_picked(int index, void* context)
 
 static void closing_timer(void* data)
 {
+	if (!closingMode)
+		return;
+
 	closeApp();
-	app_timer_register(5000, closing_timer, NULL);
+	app_timer_register(3000, closing_timer, NULL);
 }
 
 static void window_appears(Window* window)
@@ -242,10 +245,7 @@ static void window_appears(Window* window)
 	if (menuLoaded && !closingMode)
 		show_menu();
 
-	if (closingMode)
-	{
-		app_timer_register(3000, closing_timer, NULL);
-	}
+	app_timer_register(3000, closing_timer, NULL);
 }
 
 static void window_disappears(Window* me)
