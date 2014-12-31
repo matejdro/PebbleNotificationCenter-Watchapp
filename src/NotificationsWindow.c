@@ -192,12 +192,10 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
 
 	notificationData[numOfNotifications] = NULL;
 
-	bool differentNotification = pickedNotification == 0;
+	bool differentNotification = pickedNotification == id;
 
 	if (pickedNotification >= id && pickedNotification > 0)
 	{
-		differentNotification |= (pickedNotification == id);
-
 		pickedNotification--;
 	}
 

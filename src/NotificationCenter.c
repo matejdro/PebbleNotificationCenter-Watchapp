@@ -178,8 +178,6 @@ static void received_data(DictionaryIterator *received, void *context) {
 
 static void sent_data(DictionaryIterator *iterator, void *context)
 {
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_NORMAL);
-
 	if (curWindow == 1)
 		notification_window_data_sent();
 	else if (curWindow == 2)
