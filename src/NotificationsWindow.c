@@ -916,6 +916,11 @@ static void window_load(Window *window)
 	freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
 	numOfNotifications = 0;
 
+	for (int i = 0; i < NOTIFICATION_SLOTS; i++)
+	{
+		notificationData[i] = NULL;
+	}
+
 	refresh_notification();
 
 }
