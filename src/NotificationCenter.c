@@ -4,7 +4,7 @@
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 
-const uint16_t PROTOCOL_VERSION = 26;
+const uint16_t PROTOCOL_VERSION = 27;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
