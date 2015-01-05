@@ -259,6 +259,8 @@ static void window_disappears(Window* me)
 
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
+
+	closingMode = false;
 }
 
 static void window_load(Window *me) {
