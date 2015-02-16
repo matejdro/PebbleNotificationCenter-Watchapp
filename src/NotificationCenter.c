@@ -4,14 +4,11 @@
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 
-const uint16_t PROTOCOL_VERSION = 27;
+const uint16_t PROTOCOL_VERSION = 28;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
 
-uint8_t config_titleFont;
-uint8_t config_subtitleFont;
-uint8_t config_bodyFont;
 uint16_t config_timeout;
 uint16_t config_periodicTimeout;
 uint8_t config_lightTimeout;
@@ -103,9 +100,6 @@ static void received_config(DictionaryIterator *received)
 		return;
 	}
 
-	config_titleFont = data[0];
-	config_subtitleFont = data[1];
-	config_bodyFont = data[2];
 	config_timeout = (data[3] << 8) | (data[4]);
 	config_dontClose = (data[7] & 0x02) != 0;
 	config_showActive = (data[7] & 0x04) != 0;

@@ -17,6 +17,9 @@ typedef struct
 	bool showMenuOnSelectHold;
 	uint8_t shakeAction;
 	uint8_t numOfActionsInDefaultMenu;
+	uint8_t fontTitle;
+	uint8_t fontSubtitle;
+	uint8_t fontBody;
 	uint16_t textLength;
 	char title[31];
 	char subTitle[31];
@@ -88,6 +91,12 @@ static void refresh_notification(void)
 		titleText = notification->title;
 		subtitleText = notification->subTitle;
 		bodyText = notification->text;
+
+		text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
+		text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
+		text_layer_set_font(text, fonts_get_system_font(config_getFontResource(notification->fontBody)));
+
+		APP_LOG(0, "%d %d %d", notification->fontTitle, notification->fontSubtitle, notification->fontBody);
 	}
 
 	text_layer_set_text(title, titleText);
@@ -556,7 +565,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
 	uint16_t textSize = configBytes[4] << 8 | configBytes[5];
 
-	uint8_t numOfVibrationBytes = configBytes[7];
+	uint8_t numOfVibrationBytes = configBytes[10];
 
 	Notification* notification = find_notification(id);
 	if (notification == NULL)
@@ -573,7 +582,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
-					segments[i / 2] = configBytes[8 +i] | (configBytes[9 +i] << 8);
+					segments[i / 2] = configBytes[11 +i] | (configBytes[12 +i] << 8);
 					totalLength += segments[i / 2];
 					if (i % 4 == 0 && segments[i / 2] > 0)
 						vibrate = true;
@@ -609,6 +618,9 @@ static void received_message_new_notification(DictionaryIterator *received)
 	notification->showMenuOnSelectHold = (flags & 0x20) != 0;
 	notification->shakeAction = configBytes[6];
 	notification->numOfActionsInDefaultMenu = configBytes[3];
+	notification->fontTitle = configBytes[7];
+	notification->fontSubtitle = configBytes[8];
+	notification->fontBody = configBytes[9];
 	strcpy(notification->title, dict_find(received, 4)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
 	notification->text[0] = 0;
@@ -645,13 +657,15 @@ static void received_message_new_notification(DictionaryIterator *received)
 static void received_message_dismiss(DictionaryIterator *received)
 {
 	int32_t id = dict_find(received, 2)->value->int32;
+	bool close = !dict_find(received, 3)->value->uint8 == 1;
+
 	for (int i = 0; i < numOfNotifications; i++)
 	{
 		Notification* entry = notificationData[i];
 		if (entry->id != id)
 			continue;
 
-		remove_notification(i, true);
+		remove_notification(i, close);
 
 		set_busy_indicator(false);
 
@@ -854,13 +868,11 @@ static void second_tick(void)
 }
 
 
-static TextLayer* init_text_layer(int fontId)
+static TextLayer* init_text_layer()
 {
 	TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
 	text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
 	scroll_layer_add_child(scroll, (Layer*) layer);
-
-	text_layer_set_font(layer, fonts_get_system_font(config_getFontResource(fontId)));
 
 	return layer;
 }
@@ -898,9 +910,9 @@ static void window_load(Window *window)
 	scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
 	layer_add_child(topLayer, (Layer*) scroll);
 
-	title = init_text_layer(config_titleFont);
-	subTitle = init_text_layer(config_subtitleFont);
-	text = init_text_layer(config_bodyFont);
+	title = init_text_layer();
+	subTitle = init_text_layer();
+	text = init_text_layer();
 
 	actions_menu_init();
 	actions_menu_attach(topLayer);
