@@ -4,7 +4,7 @@
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 
-const uint16_t PROTOCOL_VERSION = 28;
+const uint16_t PROTOCOL_VERSION = 29;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
@@ -200,6 +200,13 @@ int main(void) {
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
+	#ifdef PBL_APLITE
+		dict_write_uint8(iterator, 3, 0);
+	#else
+		dict_write_uint8(iterator, 3, 1);
+	#endif
+
+
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
