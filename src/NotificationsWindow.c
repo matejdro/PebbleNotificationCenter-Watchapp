@@ -37,7 +37,9 @@ static uint16_t periodicVibrationPeriod = 0;
 
 static Window* notifyWindow;
 
+#ifdef PBL_SDK_2
 static InverterLayer* inverterLayer;
+#endif
 
 static Layer* statusbar;
 static TextLayer* statusClock;
@@ -916,12 +918,13 @@ static void window_load(Window *window)
 
 	actions_menu_init();
 	actions_menu_attach(topLayer);
-
+#ifdef PBL_SDK_2
 	if (config_invertColors)
 	{
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
+#endif
 
 	accel_tap_service_subscribe(accelerometer_shake);
 
@@ -951,8 +954,10 @@ static void window_unload(Window *window)
 	gbitmap_destroy(busyIndicator);
 	actions_menu_deinit();
 
+#ifdef PBL_SDK_2
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
+#endif
 
 	accel_tap_service_unsubscribe();
 
@@ -986,8 +991,10 @@ void notification_window_init(void)
 
 
 	window_set_click_config_provider(notifyWindow, (ClickConfigProvider) registerButtons);
-
+#ifdef PBL_SDK_2
 	window_set_fullscreen(notifyWindow, true);
+#endif
+
 	window_stack_push(notifyWindow, true);
 
 	if (!config_dontClose)

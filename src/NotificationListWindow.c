@@ -20,7 +20,12 @@ static uint8_t* types;
 static char** dates;
 
 static MenuLayer* menuLayer;
+
+#ifdef PBL_SDK_2
 static InverterLayer* inverterLayer;
+#else
+static StatusBarLayer* statusBar;
+#endif
 
 static GBitmap* normalNotification;
 static GBitmap* ongoingNotification;
@@ -252,6 +257,10 @@ static int16_t menu_get_row_height_callback(MenuLayer *me,
 	return 56;
 }
 
+static int16_t menu_get_separator_height_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+	return 1;
+}
+
 static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 		MenuIndex old_index, void *callback_context) {
 	shiftArray(new_index.row);
@@ -261,6 +270,7 @@ static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 		MenuIndex *cell_index, void *data) {
 	graphics_context_set_text_color(ctx, GColorBlack);
+	graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
 
 	graphics_draw_text(ctx, getTitle(cell_index->row),
 			fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
@@ -330,25 +340,35 @@ static void window_appear(Window* me) {
 
 	Layer* topLayer = window_get_root_layer(window);
 
-	menuLayer = menu_layer_create(GRect(0, 0, 144, 168 - 16));
+	menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
 
 	// Set all the callbacks for the menu layer
 	menu_layer_set_callbacks(menuLayer, NULL, (MenuLayerCallbacks ) {
 					.get_num_sections = menu_get_num_sections_callback,
 					.get_num_rows = menu_get_num_rows_callback,
-					.get_cell_height = menu_get_row_height_callback, .draw_row =
-							menu_draw_row_callback, .select_click =
-							menu_select_callback, .selection_changed =
-							menu_pos_changed });
+					.get_cell_height = menu_get_row_height_callback,
+					.get_separator_height = menu_get_separator_height_callback,
+			        .draw_row = menu_draw_row_callback,
+			        .select_click = menu_select_callback,
+			        .selection_changed = menu_pos_changed });
 
 	menu_layer_set_click_config_onto_window(menuLayer, window);
 
+#ifdef PBL_COLOR
+	menu_layer_set_highlight_colors(menuLayer, GColorChromeYellow, GColorBlack);
+#endif
+
 	layer_add_child(topLayer, (Layer*) menuLayer);
 
+#ifdef PBL_SDK_2
 	if (config_invertColors) {
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
+#else
+	statusBar = status_bar_layer_create();
+	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
+#endif
 
 	busy = false;
 	pickedEntry = -1;
@@ -365,8 +385,12 @@ static void window_disappear(Window* me) {
 
 	menu_layer_destroy(menuLayer);
 
+#ifdef PBL_SDK_2
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
+#else
+	status_bar_layer_destroy(statusBar);
+#endif
 
 	freeData();
 
@@ -391,7 +415,10 @@ void list_window_init(void) {
 
 			});
 
+#ifdef PBL_SDK_2
 	window_set_fullscreen(window, false);
+#endif
+
 
 	window_stack_push(window, false /* Animated */);
 

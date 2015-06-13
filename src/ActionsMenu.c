@@ -7,6 +7,7 @@
 
 #include <pebble.h>
 #include "tertiary_text.h"
+#include "NotificationCenter.h"
 
 static Layer* menuBackground;
 static MenuLayer* menu;
@@ -155,9 +156,9 @@ bool actions_menu_got_items(DictionaryIterator* dictionary)
 
 void actions_menu_init(void)
 {
-	menuBackground = layer_create(GRect(9, 25, 144 - 18, 168 - 34));
-	layer_set_update_proc(menuBackground, menu_paint_background);
-	layer_set_hidden((Layer*) menuBackground, true);
+    menuBackground = layer_create(GRect(9, 9 + STATUSBAR_Y_OFFSET, 144 - 18, 168 - 34));
+    layer_set_update_proc(menuBackground, menu_paint_background);
+    layer_set_hidden((Layer*) menuBackground, true);
 
 	menu = menu_layer_create(GRect(1, 1, 144 - 20, 168 - 36));
 
@@ -168,7 +169,11 @@ void actions_menu_init(void)
 		.draw_row = menu_draw_row_callback,
 	});
 
-	layer_add_child(menuBackground, (Layer*) menu);
+	layer_add_child(menuBackground, menu_layer_get_layer(menu));
+
+#ifdef PBL_COLOR
+	menu_layer_set_highlight_colors(menu, GColorChromeYellow, GColorBlack);
+#endif
 }
 
 void actions_menu_attach(Layer* layer)

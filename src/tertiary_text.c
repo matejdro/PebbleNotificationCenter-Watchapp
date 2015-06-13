@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "NotificationsWindow.h"
 #include "ActionsMenu.h"
+#include "NotificationCenter.h"
 
 #define TOP 0
 #define MID 1
@@ -22,6 +23,10 @@ static TextLayer* buttons3[3];
 static TextLayer** bbuttons[3];
 
 static Layer* actionsProxyLayer;
+
+#ifdef PBL_SDK_3
+    static StatusBarLayer* statusBar;
+#endif
 
 static bool menu = false;
 
@@ -332,7 +337,7 @@ static void initSidesAndText()
 {
     Layer *window_layer = window_get_root_layer(window);
 
-    wordsYouWrite = text_layer_create((GRect) { .origin = { 10, 0 }, .size = { 100, 150 } });
+    wordsYouWrite = text_layer_create((GRect) { .origin = { 10, STATUSBAR_Y_OFFSET }, .size = { 100, 150 } });
 
     text_layer_set_background_color(wordsYouWrite, GColorClear);
     text_layer_set_font(wordsYouWrite, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
@@ -340,16 +345,16 @@ static void initSidesAndText()
     
     for (int i = 0; i<3; i++)
     {
-        buttons1[i] = text_layer_create((GRect) { .origin = { 115, 12*i }, .size = { 100, 100 } });
-        buttons2[i] = text_layer_create((GRect) { .origin = { 115, 12*i+50 }, .size = { 100, 100 } });
-        buttons3[i] = text_layer_create((GRect) { .origin = { 115, 12*i+100 }, .size = { 100, 100 } });
+        buttons1[i] = text_layer_create((GRect) { .origin = { 115, 12*i + STATUSBAR_Y_OFFSET }, .size = { 100, 100 } });
+        buttons2[i] = text_layer_create((GRect) { .origin = { 115, 12*i+50 + STATUSBAR_Y_OFFSET }, .size = { 100, 100 } });
+        buttons3[i] = text_layer_create((GRect) { .origin = { 115, 12*i+100 + STATUSBAR_Y_OFFSET }, .size = { 100, 100 } });
     }
     
     for (int i=0; i<3; i++)
         for (int j=0; j<3; j++)
             layer_add_child(window_layer, text_layer_get_layer(bbuttons[i][j]));
     
-    actionsProxyLayer = layer_create(GRect(0, -16, 144, 168));
+    actionsProxyLayer = layer_create(GRect(0, -16 + STATUSBAR_Y_OFFSET, 144, 168));
     actions_menu_attach(actionsProxyLayer);
     layer_add_child(window_layer, actionsProxyLayer);
 }
@@ -370,6 +375,10 @@ static void deinit(void) {
         text_layer_destroy(buttons3[i]);
 	}
 
+#ifdef PBL_SDK_3
+    status_bar_layer_destroy(statusBar);
+#endif
+
     window_destroy(window);
 }
 
@@ -379,18 +388,15 @@ static void window_unload(Window *window) {
 
 static void window_load(Window* window)
 {
-    Layer *window_layer = window_get_root_layer(window);
-    //GRect bounds = layer_get_bounds(window_layer);
+    Layer *topLayer = window_get_root_layer(window);
 
-    //  text_layer_set_text(&textLayer, text_buffer);
-//    text_layer_set_background_color(&textLayer, GColorClear);
+#ifdef PBL_SDK_3
+    statusBar = status_bar_layer_create();
+    layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
+#endif
 
     initSidesAndText();
     drawSides();
-
-    // Attach our desired button functionality
-//    window_set_click_config_provider(&window, (ClickConfigProvider) click_config_provider);
-
 
 }
 

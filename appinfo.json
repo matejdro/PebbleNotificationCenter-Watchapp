@@ -9,31 +9,34 @@
     "watchface": false
   },
   "appKeys": {},
-  "resources": 
-{
- "media": [
-     {
-      "menuIcon": true,
-      "type": "png",
-      "name": "ICON",
-      "file": "icon.png"
+  "resources": {
+    "media": [
+      {
+        "menuIcon": true,
+        "type": "png",
+        "name": "ICON",
+        "file": "icon.png"
       },
       {
-      "type": "png",
-      "name": "INDICATOR_BUSY",
-      "file": "busy.png"
+        "type": "png",
+        "name": "INDICATOR_BUSY",
+        "file": "busy.png"
       },
       {
-      "type": "png",
-      "name": "COGWHEEL",
-      "file": "cogwheel.png"
+        "type": "png",
+        "name": "COGWHEEL",
+        "file": "cogwheel.png"
       },
       {
-      "type": "png",
-      "name": "RECENT",
-      "file": "recent.png"
+        "type": "png",
+        "name": "RECENT",
+        "file": "recent.png"
       }
     ]
-}
-
+  },
+  "targetPlatforms": [
+    "aplite",
+    "basalt"
+  ],
+  "sdkVersion": "3"
 }

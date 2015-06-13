@@ -17,18 +17,19 @@ static TextLayer* loadingLayer;
 static TextLayer* quitTitle;
 static TextLayer* quitText;
 
-static SimpleMenuLayer* menuLayer;
+static MenuLayer* menuLayer;
 
+#ifdef PBL_SDK_2
 static InverterLayer* inverterLayer;
+#else
+static StatusBarLayer* statusBar;
+#endif
 
 static bool firstAppear = true;
 static bool menuLoaded = false;
 
 static void show_update_dialog(void);
-static void reload_menu(void);
 static void update_settings();
-static void settings_picked(int index, void* context);
-static void notifications_picked(int index, void* context);
 
 static void show_loading(void)
 {
@@ -76,21 +77,15 @@ void show_menu(void)
 
 	if (config_showActive)
 	{
-		notificationSectionItems[0].title = "Active";
+		notificationSectionItems[0].title = " Active";
 		notificationSectionItems[0].icon = currentIcon;
-		notificationSectionItems[0].callback = notifications_picked;
 	}
 
 	int historyId = config_showActive ? 1 : 0;
-	notificationSectionItems[historyId].title = "History";
+	notificationSectionItems[historyId].title = " History";
 	notificationSectionItems[historyId].icon = historyIcon;
-	notificationSectionItems[historyId].callback = notifications_picked;
 
 	update_settings();
-	settingsSectionItems[0].callback = settings_picked;
-	settingsSectionItems[1].callback = settings_picked;
-
-	reload_menu();
 
 	layer_set_hidden((Layer *) loadingLayer, true);
 	layer_set_hidden((Layer *) menuLayer, false);
@@ -98,29 +93,37 @@ void show_menu(void)
 	layer_set_hidden((Layer *) quitText, true);
 }
 
+static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
+    return 2;
+}
 
-static void reload_menu(void)
+static int16_t menu_get_header_height_callback(struct MenuLayer *menu_layer, uint16_t section_index, void *callback_context)
 {
-	Layer* topLayer = window_get_root_layer(window);
+    return MENU_CELL_BASIC_HEADER_HEIGHT;
+}
 
+static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
+    return mainMenuSections[section_index].num_items;
+}
 
-	if (menuLayer != NULL)
-	{
-		layer_remove_from_parent((Layer *) menuLayer);
-		simple_menu_layer_destroy(menuLayer);
-	}
+static int16_t menu_get_separator_height_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+    return 1;
+}
 
-	menuLayer = simple_menu_layer_create(GRect(0, 0, 144, 152), window, mainMenuSections, 2, NULL);
+static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+    int16_t index = cell_index->row;
+    int16_t section = cell_index->section;
 
-	layer_add_child(topLayer, (Layer *) menuLayer);
+    const SimpleMenuItem* item = &mainMenuSections[section].items[index];
 
-	if (inverterLayer != NULL)
-	{
-		layer_remove_from_parent((Layer*) inverterLayer);
-		inverter_layer_destroy(inverterLayer);
-		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
-		layer_add_child(topLayer, (Layer*) inverterLayer);
-	}
+    graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
+    menu_cell_basic_draw(ctx, cell_layer, item->title, NULL, item->icon);
+}
+
+static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *callback_context)
+{
+    const SimpleMenuSection* section = &mainMenuSections[section_index];
+    menu_cell_basic_header_draw(ctx, cell_layer, section->title);
 }
 
 static void update_settings(void)
@@ -146,10 +149,12 @@ static void update_settings(void)
 		settingsSectionItems[1].title = "Vibration ON";
 		settingsSectionItems[1].subtitle = "Press to disable";
 	}
+
+    menu_layer_reload_data(menuLayer);
 }
 
 
-static void notifications_picked(int index, void* context)
+static void notifications_picked(int index)
 {
 	show_loading();
 
@@ -167,7 +172,7 @@ static void notifications_picked(int index, void* context)
 	app_message_outbox_send();
 }
 
-static void settings_picked(int index, void* context)
+static void settings_picked(int index)
 {
 	uint8_t sendingIndex = index;
 	uint8_t sendingValue;
@@ -187,7 +192,6 @@ static void settings_picked(int index, void* context)
 	}
 
 	update_settings();
-	menu_layer_reload_data((MenuLayer*) menuLayer);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -199,6 +203,15 @@ static void settings_picked(int index, void* context)
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
+
+}
+
+static void menu_select_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context)
+{
+    if (cell_index->section == 0)
+        notifications_picked(cell_index->row);
+    else
+        settings_picked(cell_index->row);
 
 }
 
@@ -218,28 +231,53 @@ static void window_appears(Window* window)
 	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	historyIcon = gbitmap_create_with_resource(RESOURCE_ID_RECENT);
 
-	loadingLayer = text_layer_create(GRect(0, 0, 144, 168 - 16));
+	loadingLayer = text_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
 	text_layer_set_text_alignment(loadingLayer, GTextAlignmentCenter);
 	text_layer_set_text(loadingLayer, "Loading...");
 	text_layer_set_font(loadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) loadingLayer);
 
-	quitTitle = text_layer_create(GRect(0, 70, 144, 50));
+	quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, 144, 50));
 	text_layer_set_text_alignment(quitTitle, GTextAlignmentCenter);
 	text_layer_set_text(quitTitle, "Press back again if app does not close in several seconds");
 	layer_add_child(topLayer, (Layer*) quitTitle);
 
-	quitText = text_layer_create(GRect(0, 10, 144, 50));
+	quitText = text_layer_create(GRect(0, 10 + STATUSBAR_Y_OFFSET, 144, 50));
 	text_layer_set_text_alignment(quitText, GTextAlignmentCenter);
 	text_layer_set_text(quitText, "Quitting...\n Please wait");
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
 
+    menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
+
+    // Set all the callbacks for the menu layer
+    menu_layer_set_callbacks(menuLayer, NULL, (MenuLayerCallbacks){
+            .get_num_sections = menu_get_num_sections_callback,
+            .get_num_rows = menu_get_num_rows_callback,
+            .draw_row = menu_draw_row_callback,
+            .draw_header = menu_draw_header_callback,
+            .get_header_height = menu_get_header_height_callback,
+            .get_separator_height = menu_get_separator_height_callback,
+            .select_click = menu_select_callback,
+    });
+
+#ifdef PBL_COLOR
+    menu_layer_set_highlight_colors(menuLayer, GColorChromeYellow, GColorBlack);
+#endif
+
+    menu_layer_set_click_config_onto_window(menuLayer, window);
+    layer_add_child(topLayer, menu_layer_get_layer(menuLayer));
+
+#ifdef PBL_SDK_2
 	if (config_invertColors)
 	{
 		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
 		layer_add_child(topLayer, (Layer*) inverterLayer);
 	}
+#else
+	statusBar = status_bar_layer_create();
+	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
+#endif
 
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
@@ -257,8 +295,14 @@ static void window_disappears(Window* me)
 	text_layer_destroy(quitTitle);
 	text_layer_destroy(quitText);
 
+    menu_layer_destroy(menuLayer);
+
+#ifdef PBL_SDK_2
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
+#else
+	status_bar_layer_destroy(statusBar);
+#endif
 
 	closingMode = false;
 }
