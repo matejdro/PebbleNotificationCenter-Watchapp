@@ -13,7 +13,6 @@ static int16_t centerIndex = 0;
 
 static int16_t pickedEntry = -1;
 
-static bool busy = false;
 static char** titles;
 static char** subtitles;
 static uint8_t* types;
@@ -313,6 +312,9 @@ static void receivedEntries(DictionaryIterator* data) {
 	setDate(offset, dict_find(data, 7)->value->cstring);
 
 	menu_layer_reload_data(menuLayer);
+
+
+		requestAdditionalEntries();
 }
 
 void list_window_data_sent(void) {
@@ -320,8 +322,6 @@ void list_window_data_sent(void) {
 		sendpickedEntry(pickedEntry);
 		return;
 	}
-
-	requestAdditionalEntries();
 }
 
 void list_window_data_received(int packetId, DictionaryIterator* data) {
@@ -370,7 +370,6 @@ static void window_appear(Window* me) {
 	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
 #endif
 
-	busy = false;
 	pickedEntry = -1;
 
 	allocateData();

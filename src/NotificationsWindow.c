@@ -97,8 +97,6 @@ static void refresh_notification(void)
 		text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
 		text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
 		text_layer_set_font(text, fonts_get_system_font(config_getFontResource(notification->fontBody)));
-
-		APP_LOG(0, "%d %d %d", notification->fontTitle, notification->fontSubtitle, notification->fontBody);
 	}
 
 	text_layer_set_text(title, titleText);
