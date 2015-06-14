@@ -200,7 +200,7 @@ int main(void) {
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
-	#ifdef PBL_APLITE
+	#ifdef PBL_PLATFORM_APLITE
 		dict_write_uint8(iterator, 3, 0);
 	#else
 		dict_write_uint8(iterator, 3, 1);
