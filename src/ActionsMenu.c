@@ -156,7 +156,7 @@ bool actions_menu_got_items(DictionaryIterator* dictionary)
 
 void actions_menu_init(void)
 {
-    menuBackground = layer_create(GRect(9, 9 + STATUSBAR_Y_OFFSET, 144 - 18, 168 - 34));
+    menuBackground = layer_create(GRect(9, 9 + 16, 144 - 18, 168 - 34));
     layer_set_update_proc(menuBackground, menu_paint_background);
     layer_set_hidden((Layer*) menuBackground, true);
 
