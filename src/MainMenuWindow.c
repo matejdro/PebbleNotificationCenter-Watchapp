@@ -36,7 +36,7 @@ static void show_loading(void)
 	layer_set_hidden((Layer *) loadingLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
-	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
+	layer_set_hidden((Layer *) menuLayer, true);
 }
 
 void show_old_watchapp(void)
@@ -260,6 +260,8 @@ static void window_appears(Window* window)
             .get_separator_height = menu_get_separator_height_callback,
             .select_click = menu_select_callback,
     });
+
+	layer_set_hidden((Layer *) menuLayer, true);
 
 #ifdef PBL_COLOR
     menu_layer_set_highlight_colors(menuLayer, GColorChromeYellow, GColorBlack);
