@@ -21,6 +21,9 @@ typedef struct
 	uint8_t fontSubtitle;
 	uint8_t fontBody;
 	uint16_t textLength;
+    #ifdef PBL_COLOR
+    GColor8 notificationColor;
+    #endif
 	char title[31];
 	char subTitle[31];
 	char* text;
@@ -71,6 +74,15 @@ static TextLayer* text;
 
 static void registerButtons(void* context);
 static Notification* get_displayed_notification();
+
+#ifdef PBL_COLOR
+static GColor getTextColor(GColor background)
+{
+    uint16_t luminance = 20 * background.r + 70 * background.g + 7 * background.b;
+    return luminance > 145 ? GColorBlack : GColorWhite;
+
+}
+#endif
 
 static void refresh_notification(void)
 {
@@ -565,7 +577,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
 	uint16_t textSize = configBytes[4] << 8 | configBytes[5];
 
-	uint8_t numOfVibrationBytes = configBytes[10];
+	uint8_t numOfVibrationBytes = configBytes[11];
 
 	Notification* notification = find_notification(id);
 	if (notification == NULL)
@@ -582,7 +594,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 				uint32_t segments[20];
 				for (int i = 0; i < numOfVibrationBytes; i+= 2)
 				{
-					segments[i / 2] = configBytes[11 +i] | (configBytes[12 +i] << 8);
+					segments[i / 2] = configBytes[12 +i] | (configBytes[13 +i] << 8);
 					totalLength += segments[i / 2];
 					if (i % 4 == 0 && segments[i / 2] > 0)
 						vibrate = true;
@@ -593,6 +605,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 					.durations = segments,
 					.num_segments = numOfVibrationBytes / 2,
 					};
+					vibes_cancel();
 					vibes_enqueue_custom_pattern(pat);
 
 					vibrating = true;
@@ -624,6 +637,10 @@ static void received_message_new_notification(DictionaryIterator *received)
 	strcpy(notification->title, dict_find(received, 4)->value->cstring);
 	strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
 	notification->text[0] = 0;
+
+    #ifdef PBL_COLOR
+        notification->notificationColor = (GColor8) {.argb = configBytes[10]};
+    #endif
 
 	if (notification->inList)
 	{
@@ -731,7 +748,14 @@ void notification_window_data_sent(void)
 
 static void statusbarback_paint(Layer *layer, GContext *ctx)
 {
-	graphics_context_set_fill_color(ctx, GColorBlack);
+    GColor backgroundColor = GColorBlack;
+    #ifdef PBL_COLOR
+        Notification* curNotification = get_displayed_notification();
+        if (curNotification != NULL)
+            backgroundColor = curNotification->notificationColor;
+    #endif
+
+	graphics_context_set_fill_color(ctx, backgroundColor);
 	graphics_fill_rect(ctx, GRect(0, 0, 144, 16), 0, GCornerNone);
 
 	if (busy)
@@ -741,8 +765,21 @@ static void statusbarback_paint(Layer *layer, GContext *ctx)
 
 static void circles_paint(Layer *layer, GContext *ctx)
 {
-	graphics_context_set_stroke_color(ctx, GColorWhite);
-	graphics_context_set_fill_color(ctx, GColorWhite);
+    GColor circlesColor = GColorWhite;
+    GColor backgroundColor = GColorBlack;
+
+#ifdef PBL_COLOR
+    Notification* curNotification = get_displayed_notification();
+    if (curNotification != NULL)
+    {
+        backgroundColor = curNotification->notificationColor;
+        circlesColor = getTextColor(backgroundColor);
+    }
+#endif
+
+
+    graphics_context_set_stroke_color(ctx, circlesColor);
+	graphics_context_set_fill_color(ctx, circlesColor);
 
 	int x;
 	int xDiff;
@@ -776,6 +813,9 @@ static void circles_paint(Layer *layer, GContext *ctx)
 
 		x += xDiff;
 	}
+
+    text_layer_set_background_color(statusClock, backgroundColor);
+    text_layer_set_text_color(statusClock, circlesColor);
 }
 
 static void updateStatusClock(void)
