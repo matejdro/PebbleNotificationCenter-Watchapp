@@ -47,6 +47,13 @@ static Window* notifyWindow;
 static InverterLayer* inverterLayer;
 #endif
 
+#ifdef PBL_COLOR
+static uint8_t* bitmapReceivingBuffer = NULL;
+static uint16_t bitmapReceivingBufferHead;
+static GBitmap* notificationBitmap = NULL;
+static BitmapLayer* notificationBitmapLayer;
+#endif
+
 static Layer* statusbar;
 static TextLayer* statusClock;
 static char clockText[9];
@@ -196,6 +203,41 @@ static void set_busy_indicator(bool value)
     layer_mark_dirty(statusbar);
 }
 
+static void switch_to_notification(uint8_t index)
+{
+    pickedNotification = index;
+    refresh_notification();
+    scroll_to_notification_start();
+
+    #ifdef  PBL_COLOR
+    Notification* newNotification = get_displayed_notification();
+    if (newNotification != NULL && newNotification->imageSize != 0)
+    {
+        if (notificationBitmap != NULL)
+        {
+            gbitmap_destroy(notificationBitmap);
+            notificationBitmap = NULL;
+            bitmap_layer_set_bitmap(notificationBitmapLayer, NULL);
+        }
+
+        //Request image for currently selected notification
+        if (bitmapReceivingBuffer != NULL)
+            free(bitmapReceivingBuffer);
+        bitmapReceivingBuffer = malloc(newNotification->imageSize);
+        bitmapReceivingBufferHead = 0;
+
+        DictionaryIterator *iterator;
+        app_message_outbox_begin(&iterator);
+        dict_write_uint8(iterator, 0, 5);
+        dict_write_uint8(iterator, 1, 0);
+        dict_write_int32(iterator, 2, newNotification->id);
+        app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+        app_message_outbox_send();
+
+    }
+    #endif
+}
+
 static Notification* create_notification(uint16_t textLength)
 {
     textLength++; //Reserve one byte for null character
@@ -252,8 +294,7 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
     {
         actions_menu_hide();
         tertiary_text_window_close();
-        refresh_notification();
-        scroll_to_notification_start();
+        switch_to_notification(pickedNotification);
     }
 
 }
@@ -530,12 +571,9 @@ static void button_up_double(ClickRecognizerRef recognizer, void* context)
     }
 
     if (pickedNotification == 0)
-        pickedNotification = numOfNotifications - 1;
+        switch_to_notification(0);
     else
-        pickedNotification--;
-
-    refresh_notification();
-    scroll_to_notification_start();
+        switch_to_notification(pickedNotification - 1);
 }
 
 static void button_down_double(ClickRecognizerRef recognizer, void* context)
@@ -560,12 +598,9 @@ static void button_down_double(ClickRecognizerRef recognizer, void* context)
     }
 
     if (pickedNotification == numOfNotifications - 1)
-        pickedNotification = 0;
+        switch_to_notification(pickedNotification);
     else
-        pickedNotification++;
-
-    refresh_notification();
-    scroll_to_notification_start();
+        switch_to_notification(pickedNotification + 1);
 }
 
 static void registerButtons(void* context) {
@@ -605,7 +640,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
     uint16_t textSize = configBytes[4] << 8 | configBytes[5];
 
-    uint8_t numOfVibrationBytes = configBytes[11];
+    uint8_t numOfVibrationBytes = configBytes[13];
 
     Notification* notification = find_notification(id);
     if (notification == NULL)
@@ -622,7 +657,7 @@ static void received_message_new_notification(DictionaryIterator *received)
                 uint32_t segments[20];
                 for (int i = 0; i < numOfVibrationBytes; i+= 2)
                 {
-                    segments[i / 2] = configBytes[12 +i] | (configBytes[13 +i] << 8);
+                    segments[i / 2] = configBytes[14 +i] | (configBytes[15 +i] << 8);
                     totalLength += segments[i / 2];
                     if (i % 4 == 0 && segments[i / 2] > 0)
                         vibrate = true;
@@ -669,7 +704,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
 #ifdef PBL_COLOR
     notification->notificationColor = (GColor8) {.argb = configBytes[10]};
-    notification->imageSize = 0; //Just for testing
+    notification->imageSize = configBytes[11] << 8 | configBytes[12];
 #endif
 
     if (notification->inList)
@@ -688,14 +723,10 @@ static void received_message_new_notification(DictionaryIterator *received)
         }
     }
 
-    if (autoSwitch && !actions_menu_is_displayed())
-        pickedNotification = numOfNotifications - 1;
-
-    if (pickedNotification == numOfNotifications - 1)
-    {
-        refresh_notification();
-        scroll_to_notification_start();
-    }
+    if (pickedNotification == 0)
+        switch_to_notification(0);
+    else if ((autoSwitch && !actions_menu_is_displayed()))
+        switch_to_notification(pickedNotification - 1);
 
     set_busy_indicator(false);
     autoSwitch = false;
@@ -746,6 +777,47 @@ static void received_message_notification_list_items(DictionaryIterator *receive
         set_busy_indicator(false);
 }
 
+#ifdef PBL_COLOR
+static void received_message_image(DictionaryIterator* received)
+{
+    if (bitmapReceivingBuffer == NULL)
+        return;
+
+    Notification* curNotification = get_displayed_notification();
+    if (curNotification == NULL)
+        return;
+
+    uint8_t* buffer = dict_find(received, 2)->value->data;
+
+    uint8_t curIndexFromPhone = buffer[0];
+    if (bitmapReceivingBufferHead % 256 != curIndexFromPhone) //Simple checksum to make sure images do not collide
+        return;
+
+    uint16_t bufferSize = curNotification->imageSize - bitmapReceivingBufferHead;
+    bool finished = true;
+    if (bufferSize > 115)
+    {
+        finished = false;
+        bufferSize = 115;
+    }
+
+    memcpy(&bitmapReceivingBuffer[bitmapReceivingBufferHead], &buffer[1], bufferSize);
+    bitmapReceivingBufferHead += bufferSize;
+
+    if (finished)
+    {
+        if (notificationBitmap != NULL)
+            gbitmap_destroy(notificationBitmap);
+
+        notificationBitmap = gbitmap_create_from_png_data(bitmapReceivingBuffer, curNotification->imageSize);
+        bitmap_layer_set_bitmap(notificationBitmapLayer, notificationBitmap);
+
+        free(bitmapReceivingBuffer);
+        bitmapReceivingBuffer = NULL;
+    }
+}
+#endif
+
 
 
 void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIterator *received) {
@@ -768,6 +840,12 @@ void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIte
     {
         received_message_notification_list_items(received);
     }
+#ifdef PBL_COLOR
+    else if (module == 5 && id == 0)
+    {
+        received_message_image(received);
+    }
+#endif
 }
 
 void notification_window_data_sent(void)
@@ -942,6 +1020,7 @@ static TextLayer* init_text_layer()
 {
     TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
     text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
+    text_layer_set_background_color(layer, GColorClear);
     layer_add_child(proxyScrollLayer, (Layer*) layer);
 
     return layer;
@@ -976,6 +1055,13 @@ static void window_load(Window *window)
     text_layer_set_font(statusClock, fonts_get_system_font(FONT_KEY_GOTHIC_14));
     text_layer_set_text_alignment(statusClock, GTextAlignmentRight);
     layer_add_child(statusbar, (Layer*) statusClock);
+
+    #ifdef  PBL_COLOR
+        notificationBitmapLayer = bitmap_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, WINDOW_HEIGHT));
+        bitmap_layer_set_alignment(notificationBitmapLayer, GAlignCenter);
+        layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
+    #endif
+
 
     scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
     layer_add_child(topLayer, (Layer*) scroll);
@@ -1029,6 +1115,23 @@ static void window_unload(Window *window)
 	if (inverterLayer != NULL)
 		inverter_layer_destroy(inverterLayer);
 #endif
+
+#ifdef PBL_COLOR
+    if (bitmapReceivingBuffer != NULL)
+    {
+        free(bitmapReceivingBuffer);
+        bitmapReceivingBuffer = NULL;
+    }
+
+    if (notificationBitmap != NULL)
+    {
+        gbitmap_destroy(notificationBitmap);
+        notificationBitmap = NULL;
+    }
+
+    bitmap_layer_destroy(notificationBitmapLayer);
+#endif
+
 
     accel_tap_service_unsubscribe();
 
