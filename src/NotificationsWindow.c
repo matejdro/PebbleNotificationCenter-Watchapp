@@ -134,6 +134,12 @@ static void refresh_notification(void)
     stroked_text_layer_set_text(subTitle, subtitleText);
     stroked_text_layer_set_text(text, bodyText);
 
+    //Disable stroke on notifications without images to improve performance
+    stroked_text_layer_set_stroke_enabled(title, additionalYOffset > 0);
+    stroked_text_layer_set_stroke_enabled(subTitle, additionalYOffset > 0);
+    stroked_text_layer_set_stroke_enabled(text, additionalYOffset > 0);
+
+
     layer_set_frame(stroked_text_layer_get_layer(title), GRect(0, 0, 144 - 4, 30000));
     layer_set_frame(stroked_text_layer_get_layer(subTitle), GRect(0, 0, 144 - 4, 30000));
     layer_set_frame(stroked_text_layer_get_layer(text), GRect(0, 0, 144 - 4, 30000));
