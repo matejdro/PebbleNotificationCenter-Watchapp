@@ -4,6 +4,7 @@
 #include "MainMenuWindow.h"
 #include "ActionsMenu.h"
 #include "tertiary_text.h"
+#include "StrokedTextLayer.h"
 
 #define NOTIFICATION_SLOTS 10
 #define NOTIFICATION_MEMORY_STORAGE_SIZE 4700
@@ -79,9 +80,9 @@ static bool downPressed = false;
 static uint8_t skippedUpPresses = 0;
 static uint8_t skippedDownPresses = 0;
 
-static TextLayer* title;
-static TextLayer* subTitle;
-static TextLayer* text;
+static StrokedTextLayer* title;
+static StrokedTextLayer* subTitle;
+static StrokedTextLayer* text;
 
 static void registerButtons(void* context);
 static Notification* get_displayed_notification();
@@ -119,9 +120,9 @@ static void refresh_notification(void)
         subtitleText = notification->subTitle;
         bodyText = notification->text;
 
-        text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
-        text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
-        text_layer_set_font(text, fonts_get_system_font(config_getFontResource(notification->fontBody)));
+        stroked_text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
+        stroked_text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
+        stroked_text_layer_set_font(text, fonts_get_system_font(config_getFontResource(notification->fontBody)));
 
         #ifdef PBL_COLOR
             if (notification->imageSize > 0)
@@ -129,28 +130,26 @@ static void refresh_notification(void)
         #endif
     }
 
-    text_layer_set_text(title, titleText);
-    text_layer_set_text(subTitle, subtitleText);
-    text_layer_set_text(text, bodyText);
+    stroked_text_layer_set_text(title, titleText);
+    stroked_text_layer_set_text(subTitle, subtitleText);
+    stroked_text_layer_set_text(text, bodyText);
 
-    text_layer_set_size(title, GSize(144 - 4, 30000));
-    text_layer_set_size(subTitle, GSize(144 - 4, 30000));
-    text_layer_set_size(text, GSize(144 - 4, 30000));
+    layer_set_frame(stroked_text_layer_get_layer(title), GRect(0, 0, 144 - 4, 30000));
+    layer_set_frame(stroked_text_layer_get_layer(subTitle), GRect(0, 0, 144 - 4, 30000));
+    layer_set_frame(stroked_text_layer_get_layer(text), GRect(0, 0, 144 - 4, 30000));
 
-    GSize titleSize = text_layer_get_content_size(title);
-    GSize subtitleSize = text_layer_get_content_size(subTitle);
-    GSize textSize = text_layer_get_content_size(text);
+    GSize titleSize = stroked_text_layer_get_content_size(title);
+    GSize subtitleSize = stroked_text_layer_get_content_size(subTitle);
+    GSize textSize = stroked_text_layer_get_content_size(text);
 
 
     titleSize.h += 3;
     subtitleSize.h += 3;
     textSize.h += 5;
 
-    text_layer_set_size(title, titleSize);
-
-    layer_set_frame(text_layer_get_layer(title), GRect(3, additionalYOffset, 144 - 6, titleSize.h));
-    layer_set_frame((Layer*) subTitle, GRect(3, titleSize.h + 1 + additionalYOffset, 144 - 6, subtitleSize.h));
-    layer_set_frame((Layer*) text, GRect(3, titleSize.h + 1 + subtitleSize.h + 1 + additionalYOffset, 144 - 6, textSize.h));
+    layer_set_frame(stroked_text_layer_get_layer(title), GRect(3, additionalYOffset, 144 - 6, titleSize.h));
+    layer_set_frame(stroked_text_layer_get_layer(subTitle), GRect(3, titleSize.h + 1 + additionalYOffset, 144 - 6, subtitleSize.h));
+    layer_set_frame(stroked_text_layer_get_layer(text), GRect(3, titleSize.h + 1 + subtitleSize.h + 1 + additionalYOffset, 144 - 6, textSize.h));
 
     int16_t verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5 + additionalYOffset;
 
@@ -1016,12 +1015,12 @@ static void second_tick(void)
 }
 
 
-static TextLayer* init_text_layer()
+static StrokedTextLayer* init_text_layer()
 {
-    TextLayer* layer = text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
-    text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
-    text_layer_set_background_color(layer, GColorClear);
-    layer_add_child(proxyScrollLayer, (Layer*) layer);
+    StrokedTextLayer* layer = stroked_text_layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
+    stroked_text_layer_set_text_overflow_mode(layer, GTextOverflowModeWordWrap);
+    stroked_text_layer_set_text_alignment(layer, GTextAlignmentLeft);
+    layer_add_child(proxyScrollLayer, stroked_text_layer_get_layer(layer));
 
     return layer;
 }
@@ -1103,9 +1102,9 @@ static void window_unload(Window *window)
 
     layer_destroy(statusbar);
     layer_destroy(circlesLayer);
-    text_layer_destroy(title);
-    text_layer_destroy(subTitle);
-    text_layer_destroy(text);
+    stroked_text_layer_destroy(title);
+    stroked_text_layer_destroy(subTitle);
+    stroked_text_layer_destroy(text);
     text_layer_destroy(statusClock);
     scroll_layer_destroy(scroll);
     gbitmap_destroy(busyIndicator);
