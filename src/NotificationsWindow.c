@@ -130,6 +130,7 @@ static void refresh_notification(void)
         #endif
     }
 
+
     stroked_text_layer_set_text(title, titleText);
     stroked_text_layer_set_text(subTitle, subtitleText);
     stroked_text_layer_set_text(text, bodyText);
@@ -139,7 +140,6 @@ static void refresh_notification(void)
     stroked_text_layer_set_stroke_enabled(subTitle, additionalYOffset > 0);
     stroked_text_layer_set_stroke_enabled(text, additionalYOffset > 0);
 
-
     layer_set_frame(stroked_text_layer_get_layer(title), GRect(0, 0, 144 - 4, 30000));
     layer_set_frame(stroked_text_layer_get_layer(subTitle), GRect(0, 0, 144 - 4, 30000));
     layer_set_frame(stroked_text_layer_get_layer(text), GRect(0, 0, 144 - 4, 30000));
@@ -147,7 +147,6 @@ static void refresh_notification(void)
     GSize titleSize = stroked_text_layer_get_content_size(title);
     GSize subtitleSize = stroked_text_layer_get_content_size(subTitle);
     GSize textSize = stroked_text_layer_get_content_size(text);
-
 
     titleSize.h += 3;
     subtitleSize.h += 3;
@@ -214,22 +213,24 @@ static void switch_to_notification(uint8_t index)
     refresh_notification();
     scroll_to_notification_start();
 
-    #ifdef  PBL_COLOR
+#ifdef  PBL_COLOR
+    if (notificationBitmap != NULL)
+    {
+        gbitmap_destroy(notificationBitmap);
+        notificationBitmap = NULL;
+        bitmap_layer_set_bitmap(notificationBitmapLayer, NULL);
+    }
+
     Notification* newNotification = get_displayed_notification();
     if (newNotification != NULL && newNotification->imageSize != 0)
     {
-        if (notificationBitmap != NULL)
-        {
-            gbitmap_destroy(notificationBitmap);
-            notificationBitmap = NULL;
-            bitmap_layer_set_bitmap(notificationBitmapLayer, NULL);
-        }
 
-        //Request image for currently selected notification
         if (bitmapReceivingBuffer != NULL)
             free(bitmapReceivingBuffer);
         bitmapReceivingBuffer = malloc(newNotification->imageSize);
         bitmapReceivingBufferHead = 0;
+
+        //Request image for currently selected notification
 
         DictionaryIterator *iterator;
         app_message_outbox_begin(&iterator);
