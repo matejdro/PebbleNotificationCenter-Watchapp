@@ -729,10 +729,8 @@ static void received_message_new_notification(DictionaryIterator *received)
         }
     }
 
-    if (pickedNotification == 0)
-        switch_to_notification(0);
-    else if ((autoSwitch && !actions_menu_is_displayed()))
-        switch_to_notification(pickedNotification - 1);
+    if (numOfNotifications == 1 || (autoSwitch && !actions_menu_is_displayed()))
+        switch_to_notification(numOfNotifications - 1);
 
     set_busy_indicator(false);
     autoSwitch = false;
