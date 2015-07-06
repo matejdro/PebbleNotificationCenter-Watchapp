@@ -4,7 +4,7 @@
   "longName": "Notification Center Beta",
   "companyName": "matejdro",
   "versionCode": 13,
-  "versionLabel": "2.50",
+  "versionLabel": "2.51",
   "watchapp": {
     "watchface": false
   },
