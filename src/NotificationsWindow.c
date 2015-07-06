@@ -1071,6 +1071,7 @@ static void window_load(Window *window)
 
 
     scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
+    scroll_layer_set_shadow_hidden(scroll, !config_displayScrollShadow);
     layer_add_child(topLayer, (Layer*) scroll);
 
     proxyScrollLayer = layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
