@@ -577,7 +577,7 @@ static void button_up_double(ClickRecognizerRef recognizer, void* context)
     }
 
     if (pickedNotification == 0)
-        switch_to_notification(0);
+        switch_to_notification(numOfNotifications - 1);
     else
         switch_to_notification(pickedNotification - 1);
 }
@@ -604,7 +604,7 @@ static void button_down_double(ClickRecognizerRef recognizer, void* context)
     }
 
     if (pickedNotification == numOfNotifications - 1)
-        switch_to_notification(pickedNotification);
+        switch_to_notification(0);
     else
         switch_to_notification(pickedNotification + 1);
 }
