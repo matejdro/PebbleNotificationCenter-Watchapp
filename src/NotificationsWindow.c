@@ -56,6 +56,10 @@ static BitmapLayer* notificationBitmapLayer;
 static Layer* bitmapShadingLayer;
 #endif
 
+#ifndef PBL_PLATFORM_APLITE
+static DictationSession* dictationSession = NULL;
+#endif
+
 static Layer* statusbar;
 static TextLayer* statusClock;
 static char clockText[9];
@@ -620,6 +624,16 @@ static void on_scroll_changed(ScrollLayer* scrollLayer, void* context)
 }
 #endif
 
+#ifndef PBL_PLATFORM_APLITE
+    static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, char *transcription, void *context)
+    {
+        if (status == DictationSessionStatusSuccess)
+        {
+            send_message_reply_writing_result(transcription);
+        }
+    }
+#endif
+
 static void vibration_stopped(void* data)
 {
     vibrating = false;
@@ -823,7 +837,8 @@ static void received_message_image(DictionaryIterator* received)
 
 
 
-void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIterator *received) {
+void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIterator *received)
+{
     if (module == 0 && id == 1)
     {
         set_busy_indicator(false);
@@ -847,6 +862,15 @@ void notification_window_received_data(uint8_t module, uint8_t id, DictionaryIte
     else if (module == 5 && id == 0)
     {
         received_message_image(received);
+    }
+#endif
+#ifndef PBL_PLATFORM_APLITE
+    else if (module == 4 && id == 1)
+    {
+        if (dictationSession == NULL)
+            dictationSession = dictation_session_create(400, dictation_session_callback, NULL);
+
+        dictation_session_start(dictationSession);
     }
 #endif
 }
@@ -1148,6 +1172,10 @@ static void window_unload(Window *window)
     bitmap_layer_destroy(notificationBitmapLayer);
 #endif
 
+#ifndef PBL_PLATFORM_APLITE
+    if (dictationSession != NULL)
+        dictation_session_destroy(dictationSession);
+#endif
 
     accel_tap_service_unsubscribe();
 

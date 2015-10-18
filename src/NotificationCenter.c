@@ -199,7 +199,7 @@ int main(void) {
 
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(sent_data);
-	app_message_open(appmessage_max_size, 50);
+	app_message_open(appmessage_max_size, 408);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
