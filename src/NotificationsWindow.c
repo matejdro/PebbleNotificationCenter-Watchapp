@@ -4,6 +4,7 @@
 #include "MainMenuWindow.h"
 #include "ActionsMenu.h"
 #include "tertiary_text.h"
+#include "BackgroundLighterLayer.h"
 
 #define NOTIFICATION_SLOTS 10
 #define NOTIFICATION_MEMORY_STORAGE_SIZE 4700
@@ -52,6 +53,7 @@ static uint8_t* bitmapReceivingBuffer = NULL;
 static uint16_t bitmapReceivingBufferHead;
 static GBitmap* notificationBitmap = NULL;
 static BitmapLayer* notificationBitmapLayer;
+static Layer* bitmapShadingLayer;
 #endif
 
 static Layer* statusbar;
@@ -86,14 +88,6 @@ static TextLayer* text;
 static void registerButtons(void* context);
 static Notification* get_displayed_notification();
 
-#ifdef PBL_COLOR
-static GColor getTextColor(GColor background)
-{
-    uint16_t luminance = 20 * background.r + 70 * background.g + 7 * background.b;
-    return luminance > 145 ? GColorBlack : GColorWhite;
-
-}
-#endif
 
 static void refresh_notification(void)
 {
@@ -619,6 +613,13 @@ static void registerButtons(void* context) {
     window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 50, (ClickHandler) button_down_click_proxy);
 }
 
+#ifdef PBL_COLOR
+static void on_scroll_changed(ScrollLayer* scrollLayer, void* context)
+{
+    layer_set_hidden(bitmapShadingLayer, scroll_layer_get_content_offset(scrollLayer).y == 0);
+}
+#endif
+
 static void vibration_stopped(void* data)
 {
     vibrating = false;
@@ -1062,12 +1063,20 @@ static void window_load(Window *window)
         notificationBitmapLayer = bitmap_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, WINDOW_HEIGHT));
         bitmap_layer_set_alignment(notificationBitmapLayer, GAlignCenter);
         layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
+
+        bitmapShadingLayer = layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, WINDOW_HEIGHT));
+        layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
+        layer_add_child(topLayer, bitmapShadingLayer);
     #endif
 
 
     scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
     scroll_layer_set_shadow_hidden(scroll, !config_displayScrollShadow);
     layer_add_child(topLayer, (Layer*) scroll);
+    #ifdef PBL_COLOR
+        scroll_layer_set_callbacks(scroll, (ScrollLayerCallbacks) { .content_offset_changed_handler = on_scroll_changed });
+    #endif
+
 
     proxyScrollLayer = layer_create(GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
     scroll_layer_add_child(scroll, proxyScrollLayer);
