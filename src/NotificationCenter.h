@@ -43,6 +43,8 @@ extern bool main_noMenu;
 extern bool closingMode;
 extern bool loadingMode;
 
+extern uint32_t appmessage_max_size;
+
 void setCurWindow(uint8_t newWindow);
 void switchWindow(uint8_t newWindow);
 uint8_t getCurWindow(void);

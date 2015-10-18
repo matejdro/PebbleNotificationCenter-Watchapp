@@ -4,7 +4,7 @@
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 
-const uint16_t PROTOCOL_VERSION = 31;
+const uint16_t PROTOCOL_VERSION = 32;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
@@ -21,6 +21,8 @@ bool config_disableNotifications;
 bool config_disableVibration;
 bool config_displayScrollShadow;
 bool main_noMenu;
+
+uint32_t appmessage_max_size;
 
 bool closingMode = false;
 bool loadingMode = false;
@@ -193,9 +195,11 @@ void closeApp(void)
 }
 
 int main(void) {
+	appmessage_max_size = app_message_inbox_size_maximum();
+
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(sent_data);
-	app_message_open(124, 50);
+	app_message_open(appmessage_max_size, 50);
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -207,7 +211,7 @@ int main(void) {
 	#else
 		dict_write_uint8(iterator, 3, 1);
 	#endif
-
+	dict_write_uint32(iterator, 4, appmessage_max_size);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
