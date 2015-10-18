@@ -38,6 +38,8 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
             uint16_t arrayIndex = y * screenWidth + x;
 
             GColor curPixel = (GColor8) {.argb = pixelData[arrayIndex]};
+
+            //Increase luminance of the pixel until it is bright enough to not make text in front unreadable
             while (getLuminance(curPixel) < MAX_LUMINANCE * 2 / 5)
             {
                 if (curPixel.r < 3)
