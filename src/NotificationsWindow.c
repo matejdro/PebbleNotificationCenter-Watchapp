@@ -23,13 +23,15 @@ typedef struct
     uint8_t fontTitle;
     uint8_t fontSubtitle;
     uint8_t fontBody;
-    uint16_t textLength;
+
+    uint16_t subtitleStart;
+    uint16_t bodyStart;
+    uint16_t currentTextLength;
+    uint16_t totalTextLength;
 #ifdef PBL_COLOR
     GColor8 notificationColor;
     uint16_t imageSize;
 #endif
-    char title[31];
-    char subTitle[31];
     char* text;
 } Notification;
 
@@ -96,8 +98,8 @@ static Notification* get_displayed_notification();
 static void refresh_notification(void)
 {
     char* titleText;
-    char* subtitleText;
-    char* bodyText;
+    char* subtitleText = "";
+    char* bodyText = "";
 
     Notification* notification;
 
@@ -106,16 +108,20 @@ static void refresh_notification(void)
     if (numOfNotifications < 1)
     {
         titleText = "No notifications";
-        subtitleText = "";
-        bodyText = "";
         notification = NULL;
     }
     else
     {
         notification = get_displayed_notification();
-        titleText = notification->title;
-        subtitleText = notification->subTitle;
-        bodyText = notification->text;
+        titleText = notification->text;
+
+        APP_LOG(0, "Refresh %u %u %u %u", notification->totalTextLength, notification->currentTextLength, notification->subtitleStart, notification->bodyStart);
+
+        if (notification->currentTextLength > notification->subtitleStart)
+            subtitleText = &notification->text[notification->subtitleStart];
+
+        if (notification->currentTextLength > notification->bodyStart)
+            bodyText = &notification->text[notification->bodyStart];
 
         text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
         text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
@@ -241,7 +247,7 @@ static Notification* create_notification(uint16_t textLength)
     textLength++; //Reserve one byte for null character
 
     Notification* notification = malloc(sizeof(Notification));
-    notification->textLength = textLength;
+    notification->totalTextLength = textLength;
     notification->text = malloc(sizeof(char) * textLength);
 
     freeNotificationMemory -= sizeof(Notification) + sizeof(char) * textLength;
@@ -254,7 +260,7 @@ static void destroy_notification(Notification* notification)
     if (notification == NULL)
         return;
 
-    freeNotificationMemory += sizeof(Notification) + sizeof(char) * notification->textLength;
+    freeNotificationMemory += sizeof(Notification) + sizeof(char) * notification->totalTextLength;
 
     free(notification->text);
     free(notification);
@@ -709,11 +715,12 @@ static void received_message_new_notification(DictionaryIterator *received)
     notification->showMenuOnSelectHold = (flags & 0x20) != 0;
     notification->shakeAction = configBytes[6];
     notification->numOfActionsInDefaultMenu = configBytes[3];
+    notification->subtitleStart = configBytes[13] << 8 | configBytes[14];
+    notification->bodyStart = configBytes[15] << 8 | configBytes[16];
     notification->fontTitle = configBytes[7];
     notification->fontSubtitle = configBytes[8];
     notification->fontBody = configBytes[9];
-    strcpy(notification->title, dict_find(received, 4)->value->cstring);
-    strcpy(notification->subTitle, dict_find(received, 5)->value->cstring);
+    notification->currentTextLength = 0;
     notification->text[0] = 0;
 
 
@@ -772,8 +779,13 @@ static void received_message_more_text(DictionaryIterator *received)
     if (notification == NULL)
         return;
 
-    uint16_t length = strlen(notification->text);
-    strcpy(notification->text + length, dict_find(received, 3)->value->cstring);
+    uint16_t length = notification->totalTextLength -  notification->currentTextLength;
+    if (length > 100)
+        length = 100;
+
+    memcpy(&notification->text[notification->currentTextLength], dict_find(received, 3)->value->data, length);
+
+    notification->currentTextLength += length;
 
     if (pickedNotification == numOfNotifications - 1)
     {
