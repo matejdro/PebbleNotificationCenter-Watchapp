@@ -242,10 +242,10 @@ static void switch_to_notification(uint8_t index)
 
 static Notification* create_notification(uint16_t textLength)
 {
-    textLength++; //Reserve one byte for null character
-
     Notification* notification = malloc(sizeof(Notification));
     notification->totalTextLength = textLength;
+    textLength++; //Reserve one byte for null character
+
     notification->text = malloc(sizeof(char) * textLength);
 
     freeNotificationMemory -= sizeof(Notification) + sizeof(char) * textLength;
@@ -258,7 +258,7 @@ static void destroy_notification(Notification* notification)
     if (notification == NULL)
         return;
 
-    freeNotificationMemory += sizeof(Notification) + sizeof(char) * notification->totalTextLength;
+    freeNotificationMemory += sizeof(Notification) + sizeof(char) * (notification->totalTextLength + 1);
 
     free(notification->text);
     free(notification);
@@ -659,7 +659,7 @@ static void received_message_new_notification(DictionaryIterator *received)
 
     uint16_t textSize = configBytes[4] << 8 | configBytes[5];
 
-    uint8_t numOfVibrationBytes = configBytes[13];
+    uint8_t numOfVibrationBytes = configBytes[17];
 
     Notification* notification = find_notification(id);
     if (notification == NULL)
@@ -676,7 +676,7 @@ static void received_message_new_notification(DictionaryIterator *received)
                 uint32_t segments[20];
                 for (int i = 0; i < numOfVibrationBytes; i+= 2)
                 {
-                    segments[i / 2] = configBytes[14 +i] | (configBytes[15 +i] << 8);
+                    segments[i / 2] = configBytes[18 +i] | (configBytes[19 +i] << 8);
                     totalLength += segments[i / 2];
                     if (i % 4 == 0 && segments[i / 2] > 0)
                         vibrate = true;
