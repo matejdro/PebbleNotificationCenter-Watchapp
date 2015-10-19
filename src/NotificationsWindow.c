@@ -115,8 +115,6 @@ static void refresh_notification(void)
         notification = get_displayed_notification();
         titleText = notification->text;
 
-        APP_LOG(0, "Refresh %u %u %u %u", notification->totalTextLength, notification->currentTextLength, notification->subtitleStart, notification->bodyStart);
-
         if (notification->currentTextLength > notification->subtitleStart)
             subtitleText = &notification->text[notification->subtitleStart];
 
