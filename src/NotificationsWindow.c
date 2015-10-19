@@ -786,6 +786,7 @@ static void received_message_more_text(DictionaryIterator *received)
     memcpy(&notification->text[notification->currentTextLength], dict_find(received, 3)->value->data, length);
 
     notification->currentTextLength += length;
+    notification->text[notification->currentTextLength] = 0;
 
     if (pickedNotification == numOfNotifications - 1)
     {
