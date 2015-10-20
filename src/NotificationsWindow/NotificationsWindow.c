@@ -1,11 +1,11 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
-#include "NotificationCenter.h"
-#include "MainMenuWindow.h"
 #include "ActionsMenu.h"
 #include "tertiary_text.h"
 #include "BackgroundLighterLayer.h"
 #include "NotificationStorage.h"
+#include "../NotificationCenter.h"
+#include "../MainMenuWindow.h"
 
 static const int16_t WINDOW_HEIGHT = 168 - 16;
 
