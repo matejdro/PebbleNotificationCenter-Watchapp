@@ -16,6 +16,7 @@ typedef struct
     int32_t id;
     bool inList;
     bool scrollToEnd;
+    bool onlyDismissable;
     bool showMenuOnSelectPress;
     bool showMenuOnSelectHold;
     uint8_t shakeAction;
@@ -421,6 +422,12 @@ static void button_center_single(ClickRecognizerRef recognizer, void* context)
     if (curNotification == NULL)
         return;
 
+    if (curNotification->onlyDismissable)
+    {
+        remove_notification(pickedNotification, true);
+        return;
+    }
+
     if (actions_menu_is_displayed())
     {
         send_message_action_menu_result(actions_menu_get_selected_index());
@@ -449,6 +456,12 @@ static void button_center_hold(ClickRecognizerRef recognizer, void* context)
     Notification* curNotification = get_displayed_notification();
     if (curNotification == NULL)
         return;
+
+    if (curNotification->onlyDismissable)
+    {
+        remove_notification(pickedNotification, true);
+        return;
+    }
 
     if (busy)
         return;
@@ -643,6 +656,44 @@ static void vibration_stopped(void* data)
     vibrating = false;
 }
 
+static void bt_handler(bool connected)
+{
+    if (!connected)
+    {
+        static char text[] = "Bluetooth Disconnected\0\0Your pebble has been disconnected from the phone.";
+        static uint8_t textSize = sizeof(text) / sizeof(char);
+
+        //Find empty notification ID
+        int32_t id = 0;
+        while (find_notification(id) != NULL)
+            id++;
+
+        Notification* notification = add_notification(textSize - 1);
+        notification->id = id;
+        notification->inList = false;
+        notification->scrollToEnd = false;
+        notification->showMenuOnSelectPress = false;
+        notification->showMenuOnSelectHold = false;
+        notification->shakeAction = 0;
+        notification->numOfActionsInDefaultMenu = 0;
+        notification->subtitleStart = 9999;
+        notification->bodyStart = 24;
+        notification->fontTitle = 7;
+        notification->fontSubtitle = 4;
+        notification->fontBody = 4;
+        notification->onlyDismissable = true;
+        notification->currentTextLength = textSize - 1;
+        memcpy(notification->text, text, textSize);
+
+        #ifdef PBL_COLOR
+            notification->notificationColor = GColorBlack;
+        #endif
+
+        switch_to_notification(numOfNotifications - 1);
+        vibes_double_pulse();
+    }
+}
+
 static void received_message_new_notification(DictionaryIterator *received)
 {
     int32_t id = dict_find(received, 2)->value->int32;
@@ -718,6 +769,7 @@ static void received_message_new_notification(DictionaryIterator *received)
     notification->fontTitle = configBytes[7];
     notification->fontSubtitle = configBytes[8];
     notification->fontBody = configBytes[9];
+    notification->onlyDismissable = false;
     notification->currentTextLength = 0;
     notification->text[0] = 0;
 
@@ -1135,6 +1187,7 @@ static void window_load(Window *window)
 #endif
 
     accel_tap_service_subscribe(accelerometer_shake);
+    bluetooth_connection_service_subscribe(bt_handler);
 
     freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
     numOfNotifications = 0;
@@ -1189,6 +1242,7 @@ static void window_unload(Window *window)
 #endif
 
     accel_tap_service_unsubscribe();
+    bluetooth_connection_service_unsubscribe();
 
     window_destroy(window);
 
