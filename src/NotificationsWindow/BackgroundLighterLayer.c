@@ -20,12 +20,10 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
 {
     GBitmap* frameBuffer = graphics_capture_frame_buffer(ctx);
 
-    uint8_t* pixelData = gbitmap_get_data(frameBuffer);
-
     GRect layerFrame = layer_get_frame(me);
     uint16_t x1 = layerFrame.origin.x;
     uint16_t y1 = layerFrame.origin.y;
-    uint16_t x2 = x1 + layerFrame.size.w;
+    uint16_t x2 = x1 + layerFrame.size.w - 1;
     uint16_t y2 = y1 + layerFrame.size.h;
 
     uint16_t screenWidth = gbitmap_get_bounds(frameBuffer).size.w;
@@ -33,11 +31,17 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
 
     for (uint16_t y = y1; y < y2; y++)
     {
-        for (uint16_t x = x1; x < x2; x++)
-        {
-            uint16_t arrayIndex = y * screenWidth + x;
+        GBitmapDataRowInfo info = gbitmap_get_data_row_info(frameBuffer, y);
+        if (x1 < info.min_x)
+            x1 = info.min_x;
+        if (x2 > info.max_x)
+            x2 = info.max_x;
 
-            GColor curPixel = (GColor8) {.argb = pixelData[arrayIndex]};
+        uint8_t* rowPixelData = info.data;
+
+        for (uint16_t x = x1; x <= x2; x++)
+        {
+            GColor curPixel = (GColor8) {.argb = rowPixelData[x]};
 
             //Increase luminance of the pixel until it is bright enough to not make text in front unreadable
             while (getLuminance(curPixel) < MAX_LUMINANCE * 2 / 5)
@@ -50,7 +54,7 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
                     curPixel.b++;
             }
 
-            pixelData[arrayIndex] = curPixel.argb;
+            rowPixelData[x] = curPixel.argb;
         }
     }
 
