@@ -97,18 +97,36 @@ static uint16_t menu_get_num_sections_callback(MenuLayer *me, void *data) {
     return 2;
 }
 
-static int16_t menu_get_header_height_callback(struct MenuLayer *menu_layer, uint16_t section_index, void *callback_context)
-{
-    return MENU_CELL_BASIC_HEADER_HEIGHT;
-}
 
 static uint16_t menu_get_num_rows_callback(MenuLayer *me, uint16_t section_index, void *data) {
     return mainMenuSections[section_index].num_items;
 }
 
-static int16_t menu_get_separator_height_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
-    return 1;
-}
+#ifdef PBL_ROUND
+	static int16_t menu_get_cell_height_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context)
+	{
+			if (!menu_layer_is_index_selected(menu_layer, cell_index))
+				return MENU_CELL_ROUND_UNFOCUSED_SHORT_CELL_HEIGHT;
+
+			const SimpleMenuItem* item = &mainMenuSections[cell_index->section].items[cell_index->row];
+			return item->icon == NULL ? MENU_CELL_ROUND_FOCUSED_SHORT_CELL_HEIGHT : MENU_CELL_ROUND_FOCUSED_TALL_CELL_HEIGHT;
+	}
+#else
+	static int16_t menu_get_separator_height_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+		return 1;
+	}
+
+	static int16_t menu_get_header_height_callback(struct MenuLayer *menu_layer, uint16_t section_index, void *callback_context)
+	{
+		return MENU_CELL_BASIC_HEADER_HEIGHT;
+	}
+
+	static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *callback_context)
+	{
+		const SimpleMenuSection* section = &mainMenuSections[section_index];
+		menu_cell_basic_header_draw(ctx, cell_layer, section->title);
+	}
+#endif
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
     int16_t index = cell_index->row;
@@ -120,11 +138,6 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     menu_cell_basic_draw(ctx, cell_layer, item->title, NULL, item->icon);
 }
 
-static void menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, uint16_t section_index, void *callback_context)
-{
-    const SimpleMenuSection* section = &mainMenuSections[section_index];
-    menu_cell_basic_header_draw(ctx, cell_layer, section->title);
-}
 
 static void update_settings(void)
 {
@@ -156,7 +169,7 @@ static void update_settings(void)
 
 static void notifications_picked(int index)
 {
-	show_loading();
+	//show_loading();
 
 	DictionaryIterator *iterator;
 	app_message_outbox_begin(&iterator);
@@ -227,39 +240,50 @@ static void closing_timer(void* data)
 static void window_appears(Window* window)
 {
 	Layer* topLayer = window_get_root_layer(window);
+	GRect windowBounds = layer_get_frame(topLayer);
+	uint16_t windowWidth = windowBounds.size.w;
+	uint16_t windowHeight = windowBounds.size.h - STATUSBAR_Y_OFFSET;
 
 	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_ICON);
 	historyIcon = gbitmap_create_with_resource(RESOURCE_ID_RECENT);
 
-	loadingLayer = text_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
+	loadingLayer = text_layer_create(GRect(0, STATUSBAR_Y_OFFSET, windowWidth, windowHeight));
 	text_layer_set_text_alignment(loadingLayer, GTextAlignmentCenter);
 	text_layer_set_text(loadingLayer, "Loading...");
 	text_layer_set_font(loadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) loadingLayer);
 
-	quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, 144, 50));
+	quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, windowWidth, 50));
 	text_layer_set_text_alignment(quitTitle, GTextAlignmentCenter);
 	text_layer_set_text(quitTitle, "Press back again if app does not close in several seconds");
 	layer_add_child(topLayer, (Layer*) quitTitle);
 
-	quitText = text_layer_create(GRect(0, 10 + STATUSBAR_Y_OFFSET, 144, 50));
+	quitText = text_layer_create(GRect(0, 10 + STATUSBAR_Y_OFFSET, windowWidth, 50));
 	text_layer_set_text_alignment(quitText, GTextAlignmentCenter);
 	text_layer_set_text(quitText, "Quitting...\n Please wait");
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
 
-    menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
+    menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, windowWidth, windowHeight));
 
     // Set all the callbacks for the menu layer
     menu_layer_set_callbacks(menuLayer, NULL, (MenuLayerCallbacks){
             .get_num_sections = menu_get_num_sections_callback,
             .get_num_rows = menu_get_num_rows_callback,
-            .draw_row = menu_draw_row_callback,
-            .draw_header = menu_draw_header_callback,
-            .get_header_height = menu_get_header_height_callback,
-            .get_separator_height = menu_get_separator_height_callback,
             .select_click = menu_select_callback,
-    });
+			.draw_row = menu_draw_row_callback,
+           #ifdef PBL_RECT
+			.get_separator_height = menu_get_separator_height_callback,
+			.get_header_height = menu_get_header_height_callback,
+			.draw_header = menu_draw_header_callback,
+           #else
+			.get_cell_height = menu_get_cell_height_callback,
+		   #endif
+	});
+
+	#ifdef PBL_PLATFORM_CHALK
+		menu_layer_set_center_focused(menuLayer, true);
+	#endif
 
 	layer_set_hidden((Layer *) menuLayer, true);
 
