@@ -5,37 +5,9 @@
 #include "ActionsMenu.h"
 #include "tertiary_text.h"
 #include "BackgroundLighterLayer.h"
-
-#define NOTIFICATION_SLOTS 10
-#define NOTIFICATION_MEMORY_STORAGE_SIZE 4700
+#include "NotificationStorage.h"
 
 static const int16_t WINDOW_HEIGHT = 168 - 16;
-
-typedef struct
-{
-    int32_t id;
-    bool inList;
-    bool scrollToEnd;
-    bool onlyDismissable;
-    bool showMenuOnSelectPress;
-    bool showMenuOnSelectHold;
-    uint8_t shakeAction;
-    uint8_t numOfActionsInDefaultMenu;
-    uint8_t fontTitle;
-    uint8_t fontSubtitle;
-    uint8_t fontBody;
-
-    uint16_t subtitleStart;
-    uint16_t bodyStart;
-    uint16_t currentTextLength;
-    uint16_t totalTextLength;
-#ifdef PBL_COLOR
-    GColor8 notificationColor;
-    uint16_t imageSize;
-#endif
-    char* text;
-} Notification;
-
 
 static uint32_t elapsedTime = 0;
 static bool appIdle = true;
@@ -72,13 +44,8 @@ static Layer* circlesLayer;
 static bool busy;
 static GBitmap* busyIndicator;
 
-static uint8_t numOfNotifications = 0;
 static uint8_t pickedNotification = 0;
 static int8_t pickedAction = -1;
-
-static uint16_t freeNotificationMemory;
-
-static Notification* notificationData[NOTIFICATION_SLOTS];
 
 static ScrollLayer* scroll;
 static Layer* proxyScrollLayer;
@@ -241,28 +208,15 @@ static void switch_to_notification(uint8_t index)
     #endif
 }
 
-static Notification* create_notification(uint16_t textLength)
+static Notification* get_displayed_notification()
 {
-    Notification* notification = malloc(sizeof(Notification));
-    notification->totalTextLength = textLength;
-    textLength++; //Reserve one byte for null character
-
-    notification->text = malloc(sizeof(char) * textLength);
-
-    freeNotificationMemory -= sizeof(Notification) + sizeof(char) * textLength;
-
-    return notification;
+    return notificationData[pickedNotification];
 }
 
-static void destroy_notification(Notification* notification)
+static void fix_picked_notification()
 {
-    if (notification == NULL)
-        return;
-
-    freeNotificationMemory += sizeof(Notification) + sizeof(char) * (notification->totalTextLength + 1);
-
-    free(notification->text);
-    free(notification);
+    if (pickedNotification >= numOfNotifications && pickedNotification > 0)
+        switch_to_notification(numOfNotifications - 1);
 }
 
 static void remove_notification(uint8_t id, bool closeAutomatically)
@@ -274,17 +228,7 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
         return;
     }
 
-    if (numOfNotifications > 0)
-        numOfNotifications--;
-
-    destroy_notification(notificationData[id]);
-
-    for (int i = id; i < numOfNotifications; i++)
-    {
-        notificationData[i] = notificationData[i + 1];
-    }
-
-    notificationData[numOfNotifications] = NULL;
+    remove_notification_from_storage(id);
 
     bool differentNotification = pickedNotification == id;
 
@@ -299,45 +243,8 @@ static void remove_notification(uint8_t id, bool closeAutomatically)
         tertiary_text_window_close();
         switch_to_notification(pickedNotification);
     }
-
 }
 
-static Notification* add_notification(uint16_t textSize)
-{
-    if (numOfNotifications >= NOTIFICATION_SLOTS)
-        remove_notification(0, false);
-
-    uint16_t totalSize = sizeof(Notification) + sizeof(char) * (textSize + 1);
-    while (freeNotificationMemory < totalSize)
-        remove_notification(0, false);
-
-    uint8_t position = numOfNotifications;
-    numOfNotifications++;
-
-    Notification* notification = create_notification(textSize);
-    notificationData[position] = notification;
-
-    layer_mark_dirty(circlesLayer);
-
-    return notification;
-}
-
-static Notification* find_notification(int32_t id)
-{
-    for (int i = 0; i < numOfNotifications; i++)
-    {
-        Notification* notification = notificationData[i];
-        if (notification != NULL && notification->id == id)
-            return notificationData[i];
-    }
-
-    return NULL;
-}
-
-static Notification* get_displayed_notification()
-{
-    return notificationData[pickedNotification];
-}
 
 static void send_message_action_menu_result(int action)
 {
@@ -490,7 +397,6 @@ static void button_up_raw_pressed(ClickRecognizerRef recognizer, void* context)
     appIdle = false;
     upPressed = true;
     skippedUpPresses = 0;
-
 }
 
 static void button_down_raw_pressed(ClickRecognizerRef recognizer, void* context)
@@ -797,6 +703,8 @@ static void received_message_new_notification(DictionaryIterator *received)
 
     if (numOfNotifications == 1 || (autoSwitch && !actions_menu_is_displayed()))
         switch_to_notification(numOfNotifications - 1);
+    else
+        fix_picked_notification();
 
     set_busy_indicator(false);
     autoSwitch = false;
@@ -1189,7 +1097,6 @@ static void window_load(Window *window)
     accel_tap_service_subscribe(accelerometer_shake);
     bluetooth_connection_service_subscribe(bt_handler);
 
-    freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
     numOfNotifications = 0;
 
     for (int i = 0; i < NOTIFICATION_SLOTS; i++)
