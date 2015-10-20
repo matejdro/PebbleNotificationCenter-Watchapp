@@ -1,6 +1,6 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
-#include "NotificationsWindow.h"
+#include "NotificationsWindow/NotificationsWindow.h"
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
 

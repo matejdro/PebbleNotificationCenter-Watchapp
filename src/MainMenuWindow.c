@@ -1,7 +1,7 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
-#include "NotificationsWindow.h"
+#include "NotificationsWindow/NotificationsWindow.h"
 
 static Window* window;
 
