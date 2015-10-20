@@ -3,6 +3,7 @@
 #include "NotificationsWindow/NotificationsWindow.h"
 #include "MainMenuWindow.h"
 #include "NotificationListWindow.h"
+#include "NotificationsWindow/Comm.h"
 
 const uint16_t PROTOCOL_VERSION = 32;
 
@@ -170,14 +171,14 @@ static void received_data(DictionaryIterator *received, void *context) {
 				return;
 		}
 
-		notification_window_received_data(destModule, packetId, received);
+		nw_received_data_callback(destModule, packetId, received);
 	}
 }
 
 static void sent_data(DictionaryIterator *iterator, void *context)
 {
 	if (curWindow == 1)
-		notification_window_data_sent();
+		nw_data_sent_callback();
 	else if (curWindow == 2)
 		list_window_data_sent();
 }

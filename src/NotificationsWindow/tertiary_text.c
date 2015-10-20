@@ -1,7 +1,7 @@
 #include <pebble.h>
-#include "NotificationsWindow.h"
 #include "ActionsMenu.h"
-#include "NotificationCenter.h"
+#include "../NotificationCenter.h"
+#include "Comm.h"
 
 #define TOP 0
 #define MID 1
@@ -157,7 +157,7 @@ static void select_single_click_handler(ClickRecognizerRef recognizer, void* con
 		int16_t pickedItem = actions_menu_get_selected_index();
 		if (pickedItem == 0)
 		{
-			send_message_reply_writing_result(text_buffer);
+            nw_send_reply_text(text_buffer);
 			actions_menu_hide();
 			window_stack_pop(true);
 		}
