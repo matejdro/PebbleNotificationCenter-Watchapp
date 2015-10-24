@@ -99,9 +99,14 @@ static void received_message_new_notification(DictionaryIterator *received)
     {
         notification = add_notification(textSize);
 
+        bool blockVibration = false;
+        int32_t oldId = dict_find(received, 4)->value->int32;
+        if (oldId != 0 && find_notification(oldId) != NULL)
+            blockVibration = true;
+
         if (!inList)
         {
-            if (canVibrate())
+            if (canVibrate() && !blockVibration)
             {
                 bool shouldVibrate = false;
 
