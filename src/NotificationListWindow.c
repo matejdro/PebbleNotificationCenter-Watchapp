@@ -271,17 +271,21 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 	graphics_context_set_text_color(ctx, GColorBlack);
 	graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
 
+	GRect bounds = layer_get_frame(cell_layer);
+
+	uint8_t xOffset = PBL_IF_ROUND_ELSE(20, 1);
+
 	graphics_draw_text(ctx, getTitle(cell_index->row),
 			fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
-			GRect(34, 0, 144 - 35, 21), GTextOverflowModeTrailingEllipsis,
+			GRect(33 + xOffset, 0, bounds.size.w - 35 - xOffset, 21), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
 	graphics_draw_text(ctx, getSubtitle(cell_index->row),
 			fonts_get_system_font(FONT_KEY_GOTHIC_14),
-			GRect(34, 21, 144 - 35, 17), GTextOverflowModeTrailingEllipsis,
+			GRect(33 + xOffset, 21, bounds.size.w - 35 - xOffset, 17), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
 	graphics_draw_text(ctx, getDate(cell_index->row),
 			fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-			GRect(34, 39, 144 - 35, 18), GTextOverflowModeTrailingEllipsis,
+			GRect(33 + xOffset, 39, bounds.size.w - 35 - xOffset, 18), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
 
 	GBitmap* image;
@@ -294,7 +298,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 		break;
 	}
 
-	graphics_draw_bitmap_in_rect(ctx, image, GRect(1, 14, 31, 31));
+	graphics_draw_bitmap_in_rect(ctx, image, GRect(xOffset, 14, 31, 31));
 }
 
 static void menu_select_callback(MenuLayer *me, MenuIndex *cell_index,
@@ -339,8 +343,9 @@ static void window_appear(Window* me) {
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
 
 	Layer* topLayer = window_get_root_layer(window);
+	GRect displayFrame = layer_get_frame(topLayer);
 
-	menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, 168 - 16));
+	menuLayer = menu_layer_create(GRect(0, STATUSBAR_Y_OFFSET, displayFrame.size.w, displayFrame.size.h - STATUSBAR_Y_OFFSET));
 
 	// Set all the callbacks for the menu layer
 	menu_layer_set_callbacks(menuLayer, NULL, (MenuLayerCallbacks ) {
