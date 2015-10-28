@@ -73,9 +73,11 @@ void nw_ui_refresh_notification(void)
     text_layer_set_text(subTitle, subtitleText);
     text_layer_set_text(text, bodyText);
 
-    layer_set_frame(text_layer_get_layer(title), GRect(0, 0, 144 - 4, 30000));
-    layer_set_frame(text_layer_get_layer(subTitle), GRect(0, 0, 144 - 4, 30000));
-    layer_set_frame(text_layer_get_layer(text), GRect(0, 0, 144 - 4, 30000));
+    GSize scrollSize = layer_get_frame(scroll_layer_get_layer(scroll)).size;
+
+    layer_set_frame(text_layer_get_layer(title), GRect(0, 0, scrollSize.w - 4, 30000));
+    layer_set_frame(text_layer_get_layer(subTitle), GRect(0, 0, scrollSize.w - 4, 30000));
+    layer_set_frame(text_layer_get_layer(text), GRect(0, 0, scrollSize.w - 4, 30000));
 
     struct GSize titleSize = text_layer_get_content_size(title);
     struct GSize subtitleSize = text_layer_get_content_size(subTitle);
@@ -85,11 +87,11 @@ void nw_ui_refresh_notification(void)
     subtitleSize.h += 3;
     textSize.h += 5;
 
-    layer_set_frame(text_layer_get_layer(title), GRect(3, additionalYOffset, 144 - 6, titleSize.h));
+    layer_set_frame(text_layer_get_layer(title), GRect(3, additionalYOffset, scrollSize.w - 6, titleSize.h));
     layer_set_frame(text_layer_get_layer(subTitle),
-                    GRect(3, titleSize.h + 1 + additionalYOffset, 144 - 6, subtitleSize.h));
+                    GRect(3, titleSize.h + 1 + additionalYOffset, scrollSize.w - 6, subtitleSize.h));
     layer_set_frame(text_layer_get_layer(text),
-                    GRect(3, titleSize.h + 1 + subtitleSize.h + 1 + additionalYOffset, 144 - 6, textSize.h));
+                    GRect(3, titleSize.h + 1 + subtitleSize.h + 1 + additionalYOffset, scrollSize.w - 6, textSize.h));
 
     short verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5 + additionalYOffset;
 
@@ -98,8 +100,13 @@ void nw_ui_refresh_notification(void)
         verticalSize = WINDOW_HEIGHT * 2;
     }
 
-    layer_set_frame(proxyScrollLayer, GRect(0, 0, 144 - 4, verticalSize));
-    scroll_layer_set_content_size(scroll, GSize(144 - 4, verticalSize));
+    #ifdef PBL_ROUND
+        //Allow user to scroll beyond screen limit to read text on the bottom.
+        verticalSize += scrollSize.h / 2;
+    #endif
+
+    layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
+    scroll_layer_set_content_size(scroll, GSize(scrollSize.w - 4, verticalSize));
 
     nw_ui_refresh_picked_indicator();
 }
@@ -259,9 +266,15 @@ static TextLayer* init_text_layer()
     TextLayer* layer = text_layer_create(
             GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
     text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
-    text_layer_set_text_alignment(layer, GTextAlignmentLeft);
+    text_layer_set_text_alignment(layer, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft));
     text_layer_set_background_color(layer, GColorClear);
+
     layer_add_child(proxyScrollLayer, text_layer_get_layer(layer));
+
+    // No pagination yet for now.
+    /*#ifdef PBL_ROUND
+        text_layer_enable_screen_text_flow_and_paging(layer, 10);
+    #endif*/
 
     return layer;
 }
