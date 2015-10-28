@@ -173,12 +173,12 @@ static void statusbarback_paint(Layer* layer, GContext* ctx)
 #endif
 
     graphics_context_set_fill_color(ctx, backgroundColor);
-    graphics_fill_rect(ctx, GRect(0, 0, 144, 16), 0, GCornerNone);
+    graphics_fill_rect(ctx, layer_get_frame(layer), 0, GCornerNone);
 
     if (busy)
     {
         graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
-        graphics_draw_bitmap_in_rect(ctx, busyIndicator, GRect(80, 3, 9, 10));
+        graphics_draw_bitmap_in_rect(ctx, busyIndicator, PBL_IF_ROUND_ELSE(GRect(120, 15, 9, 10),GRect(80, 3, 9, 10)));
     }
 }
 
@@ -234,7 +234,6 @@ static void circles_paint(Layer* layer, GContext* ctx)
         x += xDiff;
     }
 
-    text_layer_set_background_color(statusClock, backgroundColor);
     text_layer_set_text_color(statusClock, circlesColor);
 }
 
@@ -271,21 +270,24 @@ void nw_ui_load(Window* window)
 {
     busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
 
-    Layer* topLayer = window_get_root_layer(window);
+    const int statusbarSize = PBL_IF_ROUND_ELSE(32, 16);
 
-    statusbar = layer_create(GRect(0, 0, 144, 16));
+    Layer* topLayer = window_get_root_layer(window);
+    GRect windowBounds = layer_get_frame(topLayer);
+
+    statusbar = layer_create(GRect(0, 0, windowBounds.size.w, statusbarSize));
     layer_set_update_proc(statusbar, statusbarback_paint);
     layer_add_child(topLayer, statusbar);
 
-    circlesLayer = layer_create(GRect(0, 0, 144 - 65, 16));
+    circlesLayer = layer_create(PBL_IF_ROUND_ELSE(GRect(40, 16, windowBounds.size.w, 16),GRect(0, 0, 144 - 65, 16)));
     layer_set_update_proc(circlesLayer, circles_paint);
     layer_add_child(statusbar, circlesLayer);
 
-    statusClock = text_layer_create(GRect(144 - 53, 0, 50, 16));
-    text_layer_set_background_color(statusClock, GColorBlack);
+    statusClock = text_layer_create(PBL_IF_ROUND_ELSE(GRect(0, 0, windowBounds.size.w, 16), GRect(144 - 53, 0, 50, 16)));
+    text_layer_set_background_color(statusClock, GColorClear);
     text_layer_set_text_color(statusClock, GColorWhite);
     text_layer_set_font(statusClock, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-    text_layer_set_text_alignment(statusClock, GTextAlignmentRight);
+    text_layer_set_text_alignment(statusClock, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentRight));
     layer_add_child(statusbar, (Layer*) statusClock);
 
 #ifdef  PBL_COLOR
@@ -298,8 +300,7 @@ void nw_ui_load(Window* window)
     layer_add_child(topLayer, bitmapShadingLayer);
 #endif
 
-
-    scroll = scroll_layer_create(GRect(0, 16, 144, 168 - 16));
+    scroll = scroll_layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
     scroll_layer_set_shadow_hidden(scroll, !config_displayScrollShadow);
     layer_add_child(topLayer, (Layer*) scroll);
 #ifdef PBL_COLOR
