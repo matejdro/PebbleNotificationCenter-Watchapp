@@ -14,7 +14,7 @@ void notification_window_init(void);
 void nw_set_busy_state(bool newState);
 Notification* nw_get_displayed_notification();
 void nw_switch_to_notification(uint8_t index);
-void nw_vibrate(VibePattern* vibePattern, uint8_t totalLength);
+void nw_vibrate(VibePattern* vibePattern, uint16_t totalLength);
 void nw_remove_notification(uint8_t id, bool closeAutomatically);
 void nw_fix_picked_notification();
 

@@ -13,6 +13,10 @@ bool gotConfig = false;
 uint16_t config_timeout;
 uint16_t config_periodicTimeout;
 uint8_t config_lightTimeout;
+uint8_t config_periodicVibrationPatternSize;
+uint16_t config_periodicVibrationTotalDuration;
+uint32_t* config_periodicVibrationPattern = NULL;
+
 bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
@@ -24,6 +28,8 @@ bool config_displayScrollShadow;
 bool config_scrollByPage;
 bool config_disconnectedNotification;
 bool main_noMenu;
+
+
 
 uint32_t appmessage_max_size;
 
@@ -120,6 +126,15 @@ static void received_config(DictionaryIterator *received)
 
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);
 	config_lightTimeout = data[5];
+
+	config_periodicVibrationPatternSize = data[14];
+	config_periodicVibrationTotalDuration = 0;
+	config_periodicVibrationPattern = malloc(config_periodicVibrationPatternSize / 2 * sizeof(uint32_t));
+	for (int i = 0; i < config_periodicVibrationPatternSize; i+= 2)
+	{
+		config_periodicVibrationPattern[i / 2] = data[15 + i] | (data[16 + i] << 8);
+		config_periodicVibrationTotalDuration += config_periodicVibrationPattern[i / 2];
+	}
 
 	bool newInvertColors = (data[7] & 0x40) != 0;
 	if (newInvertColors != config_invertColors)
@@ -230,5 +245,8 @@ int main(void) {
 	app_event_loop();
 
 	window_stack_pop_all(false);
+
+	free(config_periodicVibrationPattern);
+
 	return 0;
 }

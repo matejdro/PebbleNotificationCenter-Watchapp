@@ -140,7 +140,7 @@ static void vibration_stopped(void* data)
     vibrating = false;
 }
 
-void nw_vibrate(VibePattern* vibePattern, uint8_t totalLength)
+void nw_vibrate(VibePattern* vibePattern, uint16_t totalLength)
 {
     vibes_cancel();
     vibes_enqueue_custom_pattern(*vibePattern);
@@ -253,9 +253,12 @@ static void second_tick(void)
         canVibrate() &&
         (config_periodicTimeout == 0 || elapsedTime < config_periodicTimeout))
     {
-        vibrating = true;
-        app_timer_register(500, vibration_stopped, NULL);
-        vibes_short_pulse();
+        VibePattern pat = {
+                .durations = config_periodicVibrationPattern,
+                .num_segments = config_periodicVibrationPatternSize / 2,
+        };
+
+        nw_vibrate(&pat, config_periodicVibrationTotalDuration);
     }
 
     nw_ui_update_statusbar_clock();

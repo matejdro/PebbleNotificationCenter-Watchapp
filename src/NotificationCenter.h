@@ -29,6 +29,11 @@ extern uint16_t config_periodicTimeout;
 extern uint8_t config_vibratePeriodically;
 extern bool config_autoSwitchNotifications;
 extern uint8_t config_vibrateMode;
+extern uint8_t config_lightTimeout;
+extern uint8_t config_periodicVibrationPatternSize;
+extern uint16_t config_periodicVibrationTotalDuration;
+extern uint32_t* config_periodicVibrationPattern;
+
 extern bool config_dontClose;
 extern bool config_showActive;
 extern bool config_lightScreen;
@@ -39,7 +44,7 @@ extern bool config_disableVibration;
 extern bool config_displayScrollShadow;
 extern bool config_scrollByPage;
 extern bool config_disconnectedNotification;
-extern uint8_t config_lightTimeout;
+
 extern bool main_noMenu;
 
 extern bool closingMode;
