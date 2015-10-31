@@ -22,6 +22,7 @@ bool config_disableNotifications;
 bool config_disableVibration;
 bool config_displayScrollShadow;
 bool config_scrollByPage;
+bool config_disconnectedNotification;
 bool main_noMenu;
 
 uint32_t appmessage_max_size;
@@ -115,6 +116,7 @@ static void received_config(DictionaryIterator *received)
 	config_disableVibration = (data[7] & 0x01) != 0;
 	config_displayScrollShadow = (data[13] & 0x01) != 0;
 	config_scrollByPage = (data[13] & 0x02) != 0;
+	config_disconnectedNotification = (data[13] & 0x04) != 0;
 
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);
 	config_lightTimeout = data[5];

@@ -38,6 +38,7 @@ extern bool config_disableNotifications;
 extern bool config_disableVibration;
 extern bool config_displayScrollShadow;
 extern bool config_scrollByPage;
+extern bool config_disconnectedNotification;
 extern uint8_t config_lightTimeout;
 extern bool main_noMenu;
 

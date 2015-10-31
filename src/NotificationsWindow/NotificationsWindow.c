@@ -274,8 +274,9 @@ static void window_load(Window *window)
     actions_menu_attach(window_get_root_layer(window));
 
     accel_tap_service_subscribe(accelerometer_shake);
-    bluetooth_connection_service_subscribe(bt_handler);
     tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) second_tick);
+    if (config_disconnectedNotification)
+        bluetooth_connection_service_subscribe(bt_handler);
 
     numOfNotifications = 0;
 
