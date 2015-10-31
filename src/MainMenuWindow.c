@@ -6,7 +6,7 @@
 static Window* window;
 
 static SimpleMenuItem notificationSectionItems[2] = {};
-static SimpleMenuItem settingsSectionItems[2] = {};
+static SimpleMenuItem settingsSectionItems[3] = {};
 static SimpleMenuSection mainMenuSections[2] = {};
 
 static GBitmap* currentIcon;
@@ -27,6 +27,7 @@ static StatusBarLayer* statusBar;
 
 static bool firstAppear = true;
 static bool menuLoaded = false;
+static bool historyCleared = false;
 
 static void show_update_dialog(void);
 static void update_settings();
@@ -73,7 +74,7 @@ void show_menu(void)
 
 	mainMenuSections[1].title = "Settings";
 	mainMenuSections[1].items = settingsSectionItems;
-	mainMenuSections[1].num_items = 2;
+	mainMenuSections[1].num_items = 3;
 
 	if (config_showActive)
 	{
@@ -135,7 +136,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
     const SimpleMenuItem* item = &mainMenuSections[section].items[index];
 
     graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
-    menu_cell_basic_draw(ctx, cell_layer, item->title, NULL, item->icon);
+    menu_cell_basic_draw(ctx, cell_layer, item->title, item->subtitle, item->icon);
 }
 
 
@@ -163,6 +164,12 @@ static void update_settings(void)
 		settingsSectionItems[1].subtitle = "Press to disable";
 	}
 
+	settingsSectionItems[2].title = "Clear History";
+	if (historyCleared)
+		settingsSectionItems[2].subtitle = "Cleared";
+	else
+		settingsSectionItems[2].subtitle = "Press to clear";
+
     menu_layer_reload_data(menuLayer);
 }
 
@@ -188,7 +195,7 @@ static void notifications_picked(int index)
 static void settings_picked(int index)
 {
 	uint8_t sendingIndex = index;
-	uint8_t sendingValue;
+	uint8_t sendingValue = 0;
 
 	switch (index)
 	{
@@ -199,6 +206,9 @@ static void settings_picked(int index)
 	case 1:
 		config_disableVibration = !config_disableVibration;
 		sendingValue = config_disableVibration ? 1 : 0;
+		break;
+	case 2:
+		historyCleared = true;
 		break;
 	default:
 		return;
@@ -304,6 +314,8 @@ static void window_appears(Window* window)
 	statusBar = status_bar_layer_create();
 	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
 #endif
+
+	historyCleared = false;
 
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
