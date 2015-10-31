@@ -9,7 +9,7 @@
 #include "../NotificationCenter.h"
 #include "BackgroundLighterLayer.h"
 
-static const int16_t WINDOW_HEIGHT = 168 - 16;
+static int16_t windowHeight;
 
 #ifdef PBL_SDK_2
     static InverterLayer* inverterLayer;
@@ -64,7 +64,7 @@ void nw_ui_refresh_notification(void)
 
 #ifdef PBL_COLOR
         if (notification->imageSize > 0)
-            additionalYOffset = WINDOW_HEIGHT;
+            additionalYOffset = windowHeight;
 #endif
     }
 
@@ -95,14 +95,15 @@ void nw_ui_refresh_notification(void)
 
     short verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5 + additionalYOffset;
 
-    if (additionalYOffset != 0 && verticalSize < WINDOW_HEIGHT * 2)
+    if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
     {
-        verticalSize = WINDOW_HEIGHT * 2;
+        verticalSize = windowHeight * 2;
     }
 
     #ifdef PBL_ROUND
-        //Allow user to scroll beyond screen limit to read text on the bottom.
-        verticalSize += scrollSize.h / 2;
+        text_layer_enable_screen_text_flow_and_paging(title, 10);
+        text_layer_enable_screen_text_flow_and_paging(subTitle, 10);
+        text_layer_enable_screen_text_flow_and_paging(text, 10);
     #endif
 
     layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
@@ -135,7 +136,7 @@ void nw_ui_scroll_to_notification_start(void)
 
 #ifdef PBL_COLOR
         if (notification->imageSize > 0)
-            scrollTo -= WINDOW_HEIGHT;
+            scrollTo -= windowHeight;
 #endif
     }
 
@@ -146,9 +147,11 @@ void nw_ui_scroll_to_notification_start(void)
 
 void nw_ui_scroll_notification(bool down)
 {
+    int16_t scrollBy = PBL_IF_ROUND_ELSE(windowHeight, config_scrollByPage ? windowHeight : 50);
+
     GSize size = scroll_layer_get_content_size(scroll);
     GPoint point = scroll_layer_get_content_offset(scroll);
-    point.y += down ? -50 : 50;
+    point.y += down ? -scrollBy : scrollBy;
 
     if (point.y < -size.h)
         point.y = -size.h;
@@ -270,12 +273,6 @@ static TextLayer* init_text_layer()
     text_layer_set_background_color(layer, GColorClear);
 
     layer_add_child(proxyScrollLayer, text_layer_get_layer(layer));
-
-    // No pagination yet for now.
-    /*#ifdef PBL_ROUND
-        text_layer_enable_screen_text_flow_and_paging(layer, 10);
-    #endif*/
-
     return layer;
 }
 
@@ -287,6 +284,7 @@ void nw_ui_load(Window* window)
 
     Layer* topLayer = window_get_root_layer(window);
     GRect windowBounds = layer_get_frame(topLayer);
+    windowHeight = windowBounds.size.h - statusbarSize;
 
     statusbar = layer_create(GRect(0, 0, windowBounds.size.w, statusbarSize));
     layer_set_update_proc(statusbar, statusbarback_paint);
@@ -304,11 +302,11 @@ void nw_ui_load(Window* window)
     layer_add_child(statusbar, (Layer*) statusClock);
 
 #ifdef  PBL_COLOR
-    notificationBitmapLayer = bitmap_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, WINDOW_HEIGHT));
+    notificationBitmapLayer = bitmap_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, windowHeight));
     bitmap_layer_set_alignment(notificationBitmapLayer, GAlignCenter);
     layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
-    bitmapShadingLayer = layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, WINDOW_HEIGHT));
+    bitmapShadingLayer = layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, windowHeight));
     layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
     layer_add_child(topLayer, bitmapShadingLayer);
 #endif
@@ -319,7 +317,6 @@ void nw_ui_load(Window* window)
 #ifdef PBL_COLOR
     scroll_layer_set_callbacks(scroll, (ScrollLayerCallbacks) {.content_offset_changed_handler = on_scroll_changed});
 #endif
-
 
     proxyScrollLayer = layer_create(
             GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
