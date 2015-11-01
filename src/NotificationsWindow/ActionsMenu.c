@@ -176,6 +176,10 @@ void actions_menu_init(void)
 #ifdef PBL_COLOR
 	menu_layer_set_highlight_colors(menu, GColorChromeYellow, GColorBlack);
 #endif
+
+#ifdef PBL_SDK_3
+	menu_layer_set_center_focused(menu, false);
+#endif
 }
 
 void actions_menu_attach(Layer* layer)
