@@ -226,11 +226,16 @@ int main(void) {
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
-	#ifdef PBL_PLATFORM_APLITE
-		dict_write_uint8(iterator, 3, 0);
-	#else
-		dict_write_uint8(iterator, 3, 1);
-	#endif
+
+	uint8_t platform = 0; //Applite
+	#ifdef PBL_PLATFORM_BASALT
+		platform = 1;
+    #endif
+	#ifdef PBL_PLATFORM_CHALK
+		platform = 2;
+    #endif
+
+	dict_write_uint8(iterator, 3, platform);
 	dict_write_uint32(iterator, 4, appmessage_max_size);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
