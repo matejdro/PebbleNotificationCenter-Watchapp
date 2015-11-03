@@ -302,7 +302,7 @@ void nw_ui_load(Window* window)
     layer_add_child(statusbar, (Layer*) statusClock);
 
 #ifdef  PBL_COLOR
-    notificationBitmapLayer = bitmap_layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, windowHeight));
+    notificationBitmapLayer = bitmap_layer_create(GRect((windowBounds.size.w - 144) / 2, STATUSBAR_Y_OFFSET, 144, windowHeight));
     bitmap_layer_set_alignment(notificationBitmapLayer, GAlignCenter);
     layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
