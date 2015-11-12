@@ -10,6 +10,7 @@
 #include "BackgroundLighterLayer.h"
 
 static int16_t windowHeight;
+static int16_t statusbarSize;
 
 #ifdef PBL_SDK_2
     static InverterLayer* inverterLayer;
@@ -280,7 +281,7 @@ void nw_ui_load(Window* window)
 {
     busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
 
-    const int statusbarSize = PBL_IF_ROUND_ELSE(32, 16);
+    statusbarSize = PBL_IF_ROUND_ELSE(32, 16);
 
     Layer* topLayer = window_get_root_layer(window);
     GRect windowBounds = layer_get_frame(topLayer);
@@ -302,11 +303,14 @@ void nw_ui_load(Window* window)
     layer_add_child(statusbar, (Layer*) statusClock);
 
 #ifdef  PBL_COLOR
-    notificationBitmapLayer = bitmap_layer_create(GRect((windowBounds.size.w - 144) / 2, STATUSBAR_Y_OFFSET, 144, windowHeight));
-    bitmap_layer_set_alignment(notificationBitmapLayer, GAlignCenter);
+    int16_t bitmapAreaHeight = PBL_IF_ROUND_ELSE(windowHeight, windowHeight);
+    int16_t bitmaXOffset = (windowBounds.size.w - 144) / 2;
+
+    notificationBitmapLayer = bitmap_layer_create(GRect(bitmaXOffset, statusbarSize, 144, bitmapAreaHeight));
+    bitmap_layer_set_alignment(notificationBitmapLayer, PBL_IF_ROUND_ELSE(GAlignTop, GAlignCenter));
     layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
-    bitmapShadingLayer = layer_create(GRect(0, STATUSBAR_Y_OFFSET, 144, windowHeight));
+    bitmapShadingLayer = layer_create(GRect(bitmaXOffset, statusbarSize, 144, bitmapAreaHeight));
     layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
     layer_add_child(topLayer, bitmapShadingLayer);
 #endif

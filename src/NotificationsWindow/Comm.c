@@ -258,7 +258,7 @@ static void received_message_image(DictionaryIterator* received)
     uint16_t bufferSize = curNotification->imageSize - bitmapReceivingBufferHead;
     bool finished = true;
 
-    uint16_t maxBufferSize = (uint16_t) (appmessage_max_size - 1 - 7); //Substract overhead from maximum message size.
+    uint16_t maxBufferSize = (uint16_t) (appmessage_max_size - 3 * 7 - 2 - 1 - 1); //Substract overhead from maximum message size.
 
 
     if (bufferSize > maxBufferSize)
