@@ -11,6 +11,7 @@
 
 static int16_t windowHeight;
 static int16_t statusbarSize;
+static int16_t yScrollOffset = 0;
 
 #ifdef PBL_SDK_2
     static InverterLayer* inverterLayer;
@@ -105,6 +106,8 @@ void nw_ui_refresh_notification(void)
         text_layer_enable_screen_text_flow_and_paging(title, 10);
         text_layer_enable_screen_text_flow_and_paging(subTitle, 10);
         text_layer_enable_screen_text_flow_and_paging(text, 10);
+
+        verticalSize += windowHeight / 2;
     #endif
 
     layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
@@ -141,6 +144,8 @@ void nw_ui_scroll_to_notification_start(void)
 #endif
     }
 
+    yScrollOffset = scrollTo;
+
     //First scroll with animation to override animation caused by pressing buttons. Then scroll without animation to speed it up.
     scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), true);
     scroll_layer_set_content_offset(scroll, GPoint(0, scrollTo), false);
@@ -151,13 +156,21 @@ void nw_ui_scroll_notification(bool down)
     int16_t scrollBy = PBL_IF_ROUND_ELSE(windowHeight, config_scrollByPage ? windowHeight : 50);
 
     GSize size = scroll_layer_get_content_size(scroll);
-    GPoint point = scroll_layer_get_content_offset(scroll);
-    point.y += down ? -scrollBy : scrollBy;
 
-    if (point.y < -size.h)
-        point.y = -size.h;
+    int16_t pageNumber = yScrollOffset / scrollBy;
+    if (down)
+        pageNumber--;
+    else
+        pageNumber++;
 
-    scroll_layer_set_content_offset(scroll, point, true);
+    yScrollOffset = pageNumber * scrollBy;
+
+    if (yScrollOffset < -size.h)
+        yScrollOffset = -size.h;
+    else if (yScrollOffset > 0)
+        yScrollOffset = 0;
+
+    scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), true);
 }
 
 #ifdef PBL_COLOR
