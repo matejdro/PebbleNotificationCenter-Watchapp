@@ -9,6 +9,18 @@
 #include "../NotificationCenter.h"
 #include "BackgroundLighterLayer.h"
 
+typedef struct
+{
+    char* text;
+    GFont font;
+    GRect bounds;
+#if PBL_SDK_3
+    GTextAttributes* attributes;
+#endif
+} TextParameters;
+
+static const GTextAlignment TEXT_ALIGNMENT = PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft);
+
 static int16_t windowHeight;
 static int16_t statusbarSize;
 static int16_t yScrollOffset = 0;
@@ -29,10 +41,26 @@ static GBitmap* busyIndicator;
 static char clockText[9];
 
 static ScrollLayer* scroll;
-static Layer* proxyScrollLayer;
-static TextLayer* title;
-static TextLayer* subTitle;
-static TextLayer* text;
+static Layer* textDisplayLayer;
+
+TextParameters title;
+TextParameters subtitle;
+TextParameters body;
+
+static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
+{
+    #ifdef PBL_SDK_3
+        if (config_scrollByPage)
+        {
+            GPoint textOriginPointOnScreen = GPoint(textBox->bounds.origin.x % textAreaFrame.size.w + textAreaFrame.origin.x, textBox->bounds.origin.y % textAreaFrame.size.h + textAreaFrame.origin.y);
+            graphics_text_attributes_enable_paging(textBox->attributes, textOriginPointOnScreen, textAreaFrame);
+        }
+
+        textBox->bounds.size = graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes);
+    #else
+        textBox->bounds.size = graphics_text_layout_get_content_size(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT);
+    #endif
+}
 
 void nw_ui_refresh_notification(void)
 {
@@ -48,6 +76,10 @@ void nw_ui_refresh_notification(void)
     {
         titleText = "No notifications";
         notification = NULL;
+
+        title.font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+        subtitle.font = title.font;
+        body.font = title.font;
     }
     else
     {
@@ -60,58 +92,31 @@ void nw_ui_refresh_notification(void)
         if (notification->currentTextLength > notification->bodyStart)
             bodyText = &notification->text[notification->bodyStart];
 
-        text_layer_set_font(title, fonts_get_system_font(config_getFontResource(notification->fontTitle)));
-        text_layer_set_font(subTitle, fonts_get_system_font(config_getFontResource(notification->fontSubtitle)));
-        text_layer_set_font(text, fonts_get_system_font(config_getFontResource(notification->fontBody)));
+        title.font = fonts_get_system_font(config_getFontResource(notification->fontTitle));
+        subtitle.font = fonts_get_system_font(config_getFontResource(notification->fontSubtitle));
+        body.font = fonts_get_system_font(config_getFontResource(notification->fontBody));
 
-#ifdef PBL_COLOR
+    #ifdef PBL_COLOR
         if (notification->imageSize > 0)
             additionalYOffset = windowHeight;
-#endif
+    #endif
     }
 
 
-    text_layer_set_text(title, titleText);
-    text_layer_set_text(subTitle, subtitleText);
-    text_layer_set_text(text, bodyText);
+    title.text = titleText;
+    subtitle.text = subtitleText;
+    body.text = bodyText;
 
-    GSize scrollSize = layer_get_frame(scroll_layer_get_layer(scroll)).size;
+    GRect textAreaFrame = layer_get_frame(scroll_layer_get_layer(scroll));
 
-    layer_set_frame(text_layer_get_layer(title), GRect(0, 0, scrollSize.w - 4, 30000));
-    layer_set_frame(text_layer_get_layer(subTitle), GRect(0, 0, scrollSize.w - 4, 30000));
-    layer_set_frame(text_layer_get_layer(text), GRect(0, 0, scrollSize.w - 4, 30000));
+    title.bounds.origin = GPoint(2, additionalYOffset);
+    calculateTextSize(&title, textAreaFrame);
+    subtitle.bounds.origin = GPoint(2, title.bounds.size.h + 1 + title.bounds.origin.y);
+    calculateTextSize(&subtitle, textAreaFrame);
+    body.bounds.origin = GPoint(2, subtitle.bounds.size.h + 1 + subtitle.bounds.origin.y);
+    calculateTextSize(&body, textAreaFrame);
 
-    #ifdef PBL_SDK_3
-        if (config_scrollByPage)
-        {
-            //text_layer_enable_screen_text_flow_and_paging will take current position, so we must temporarily scroll to the top
-            scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
-
-            uint8_t xInset = PBL_IF_ROUND_ELSE(5, 0);
-
-            text_layer_enable_screen_text_flow_and_paging(title, xInset);
-            text_layer_enable_screen_text_flow_and_paging(subTitle, xInset);
-            text_layer_enable_screen_text_flow_and_paging(text, xInset);
-
-            scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), false);
-        }
-    #endif
-
-    struct GSize titleSize = text_layer_get_content_size(title);
-    struct GSize subtitleSize = text_layer_get_content_size(subTitle);
-    struct GSize textSize = text_layer_get_content_size(text);
-
-    titleSize.h += 3;
-    subtitleSize.h += 3;
-    textSize.h += 5;
-
-    layer_set_frame(text_layer_get_layer(title), GRect(3, additionalYOffset, scrollSize.w - 6, titleSize.h));
-    layer_set_frame(text_layer_get_layer(subTitle),
-                    GRect(3, titleSize.h + 1 + additionalYOffset, scrollSize.w - 6, subtitleSize.h));
-    layer_set_frame(text_layer_get_layer(text),
-                    GRect(3, titleSize.h + 1 + subtitleSize.h + 1 + additionalYOffset, scrollSize.w - 6, textSize.h));
-
-    short verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5 + additionalYOffset;
+    short verticalSize = body.bounds.size.h + body.bounds.origin.y + 5 + additionalYOffset;
 
     if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
         verticalSize = windowHeight * 2;
@@ -120,10 +125,27 @@ void nw_ui_refresh_notification(void)
         verticalSize += windowHeight / 2;
 
 
-    layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
-    scroll_layer_set_content_size(scroll, GSize(scrollSize.w - 4, verticalSize));
+    layer_set_frame(textDisplayLayer, GRect(0, 0, textAreaFrame.size.w - 4, verticalSize));
+    scroll_layer_set_content_size(scroll, GSize(textAreaFrame.size.w - 4, verticalSize));
+    layer_mark_dirty(textDisplayLayer);
 
     nw_ui_refresh_picked_indicator();
+}
+
+static void text_display_layer_paint(Layer* layer, GContext* ctx)
+{
+    graphics_context_set_text_color(ctx, GColorBlack);
+
+    #ifdef PBL_SDK_3
+        graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
+        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
+        graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
+    #else
+    graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
+        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
+        graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
+    #endif
+
 }
 
 void nw_ui_refresh_picked_indicator(void)
@@ -289,18 +311,6 @@ void nw_ui_update_statusbar_clock()
     text_layer_set_text(statusClock, clockText);
 }
 
-static TextLayer* init_text_layer()
-{
-    TextLayer* layer = text_layer_create(
-            GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
-    text_layer_set_overflow_mode(layer, GTextOverflowModeWordWrap);
-    text_layer_set_text_alignment(layer, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft));
-    text_layer_set_background_color(layer, GColorClear);
-
-    layer_add_child(proxyScrollLayer, text_layer_get_layer(layer));
-    return layer;
-}
-
 void nw_ui_load(Window* window)
 {
     busyIndicator = gbitmap_create_with_resource(RESOURCE_ID_INDICATOR_BUSY);
@@ -346,13 +356,10 @@ void nw_ui_load(Window* window)
     scroll_layer_set_callbacks(scroll, (ScrollLayerCallbacks) {.content_offset_changed_handler = on_scroll_changed});
 #endif
 
-    proxyScrollLayer = layer_create(
+    textDisplayLayer = layer_create(
             GRect(0, 0, 0, 0)); //Size is set by notification_refresh() so it is not important here
-    scroll_layer_add_child(scroll, proxyScrollLayer);
-
-    title = init_text_layer();
-    subTitle = init_text_layer();
-    text = init_text_layer();
+    scroll_layer_add_child(scroll, textDisplayLayer);
+    layer_set_update_proc(textDisplayLayer, text_display_layer_paint);
 
     #ifdef PBL_SDK_2
         if (config_invertColors)
@@ -360,16 +367,24 @@ void nw_ui_load(Window* window)
             inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
             layer_add_child(topLayer, (Layer*) inverterLayer);
         }
-    #endif
+    #else
+        title.attributes = graphics_text_attributes_create();
+        subtitle.attributes = graphics_text_attributes_create();
+        body.attributes = graphics_text_attributes_create();
+
+        #ifdef PBL_ROUND
+            graphics_text_attributes_enable_screen_text_flow(title.attributes, 5);
+            graphics_text_attributes_enable_screen_text_flow(subtitle.attributes, 5);
+            graphics_text_attributes_enable_screen_text_flow(body.attributes, 5);
+        #endif
+#endif
 }
 
 void nw_ui_unload()
 {
     layer_destroy(statusbar);
     layer_destroy(circlesLayer);
-    text_layer_destroy(title);
-    text_layer_destroy(subTitle);
-    text_layer_destroy(text);
+    layer_destroy(textDisplayLayer);
     text_layer_destroy(statusClock);
     scroll_layer_destroy(scroll);
     gbitmap_destroy(busyIndicator);
@@ -377,7 +392,11 @@ void nw_ui_unload()
     #ifdef PBL_SDK_2
         if (inverterLayer != NULL)
             inverter_layer_destroy(inverterLayer);
-    #endif
+    #else
+         graphics_text_attributes_destroy(title.attributes);
+        graphics_text_attributes_destroy(subtitle.attributes);
+        graphics_text_attributes_destroy(body.attributes);
+#endif
 
     #ifdef PBL_COLOR
         bitmap_layer_destroy(notificationBitmapLayer);
