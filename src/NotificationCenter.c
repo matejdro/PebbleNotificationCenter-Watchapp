@@ -216,6 +216,8 @@ void closeApp(void)
 
 int main(void) {
 	appmessage_max_size = app_message_inbox_size_maximum();
+	if (appmessage_max_size > 4096)
+		appmessage_max_size = 4096; //Limit inbox size to conserve RAM.
 
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(sent_data);
