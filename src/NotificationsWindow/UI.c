@@ -336,14 +336,14 @@ void nw_ui_load(Window* window)
     layer_add_child(statusbar, (Layer*) statusClock);
 
 #ifdef  PBL_COLOR
-    int16_t bitmapAreaHeight = PBL_IF_ROUND_ELSE(windowHeight, windowHeight);
-    int16_t bitmaXOffset = (windowBounds.size.w - 144) / 2;
+    int16_t bitmapXOffset = (windowBounds.size.w - 144) / 2;
+    GRect bitmapFrame = GRect(bitmapXOffset, statusbarSize, 144, windowHeight);
 
-    notificationBitmapLayer = bitmap_layer_create(GRect(bitmaXOffset, statusbarSize, 144, bitmapAreaHeight));
+    notificationBitmapLayer = bitmap_layer_create(bitmapFrame);
     bitmap_layer_set_alignment(notificationBitmapLayer, PBL_IF_ROUND_ELSE(GAlignTop, GAlignCenter));
     layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
-    bitmapShadingLayer = layer_create(GRect(bitmaXOffset, statusbarSize, 144, bitmapAreaHeight));
+    bitmapShadingLayer = layer_create(bitmapFrame);
     layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
     layer_add_child(topLayer, bitmapShadingLayer);
 #endif
