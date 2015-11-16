@@ -203,7 +203,6 @@ void nw_ui_scroll_notification(bool down)
         yScrollOffset = 0;
 
     scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), true);
-    APP_LOG(0, "Offset %d", scroll_layer_get_content_offset(scroll).y);
 }
 
 #ifdef PBL_COLOR
