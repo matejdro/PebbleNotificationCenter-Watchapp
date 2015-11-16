@@ -1,9 +1,11 @@
 /**
- * Tertiary Text, by  vgmoose and PeterSumm
+ * Tertiary Text, originally by  vgmoose and PeterSumm
  * https://github.com/PeterSumm/tertiary_text
  */
 
 #include "tertiary_text.h"
+#include "ActionsMenu.h"
+#include "Comm.h"
 
 // Max text limit in characters
 // You may adjust this to allow longer messages
@@ -136,16 +138,54 @@ static void clickButton(int b)
 
 static void up_single_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (actions_menu_is_displayed())
+    {
+        actions_menu_move_up();
+        return;
+    }
+
     clickButton(TOP);
 }
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (actions_menu_is_displayed())
+    {
+        int16_t pickedItem = actions_menu_get_selected_index();
+        if (pickedItem == 0)
+        {
+            nw_send_reply_text(text_buffer);
+            actions_menu_hide();
+            window_stack_pop(true);
+        }
+        else
+        {
+            char* copySource = actions_menu_get_action_text(pickedItem);
+            int sourceLength = strlen(copySource);
+
+            if (sourceLength + pos < MAX_CHARS)
+            {
+                strcpy(&text_buffer[pos], copySource);
+                pos += sourceLength;
+                drawNotepadText();
+                actions_menu_hide();
+            }
+        }
+
+        return;
+    }
+
     clickButton(MID);
 }
 
 static void down_single_click_handler(ClickRecognizerRef recognizer, void* context)
 {
+    if (actions_menu_is_displayed())
+    {
+        actions_menu_move_down();
+        return;
+    }
+
     clickButton(BOT);
 }
 
@@ -171,11 +211,8 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void* conte
     if (common_long(MID)) return;
 
     // Close this window
-    window_stack_pop( animated );
 
-    // Call user supplied callback with text_buffer
-    callback( text_buffer, strlen( text_buffer ), extra );
-
+    actions_menu_show();
 }
 
 
@@ -197,6 +234,14 @@ static void down_long_click_handler(ClickRecognizerRef recognizer, void* context
 
 }
 
+static void back_single_click_handler(ClickRecognizerRef recognizer, void* context) {
+
+    if (actions_menu_is_displayed())
+        actions_menu_hide();
+    else
+        window_stack_pop(true);
+}
+
 static void set_menu()
 {
     menu = true;
@@ -213,6 +258,8 @@ static void click_config_provider(void* context)
 
     window_single_click_subscribe(BUTTON_ID_DOWN, down_single_click_handler);
     window_long_click_subscribe(BUTTON_ID_DOWN, 1000, down_long_click_handler, NULL);
+
+    window_single_click_subscribe(BUTTON_ID_BACK, back_single_click_handler);
 }
 
 static void drawMenu()
@@ -297,7 +344,6 @@ static void initSidesAndText()
 #endif
     text_layer_set_font( text_title, fonts_get_system_font( FONT_KEY_GOTHIC_14_BOLD ) );
     text_layer_set_text( text_title, title );
-    text_layer_set_text( text_title, "This is a test and another test." );
     layer_add_child( window_layer, text_layer_get_layer( text_title ) );
 
     // Create a text layer for the text that has been typed - PRS
@@ -329,6 +375,8 @@ static void initSidesAndText()
         for( int j=0; j<3; j++ )
             layer_add_child( window_layer, text_layer_get_layer( bbuttons[i][j] ) );
 
+    actions_menu_attach(window_layer);
+
 }
 
 static void drawNotepadText()
@@ -347,6 +395,7 @@ static void window_unload(Window *window)
             text_layer_destroy( bbuttons[ i ][ j ] );
 
     window_destroy(window);
+    window = NULL;
 }
 
 static void window_load(Window* window)
@@ -388,4 +437,10 @@ void tertiary_text_prompt( const char* _title, TertiaryTextCallback _callback, v
 
     // Push the window onto the stack
     window_stack_push(window, animated);
+}
+
+void tertiary_text_window_close()
+{
+    if (window != NULL)
+        window_stack_remove(window, true);
 }

@@ -7,7 +7,6 @@
 
 #include <pebble.h>
 #include "tertiary_text.h"
-#include "NotificationCenter.h"
 
 static Layer* menuBackground;
 static MenuLayer* menu;
@@ -129,7 +128,7 @@ bool actions_menu_got_items(DictionaryIterator* dictionary)
 		if (displayTertiaryText)
 		{
 			actions_menu_hide();
-			tertiary_text_window_init();
+			tertiary_text_prompt("Enter reply:", NULL, NULL);
 		}
 		else if (!actions_menu_is_displayed())
 		{
