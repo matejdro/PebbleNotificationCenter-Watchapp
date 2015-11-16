@@ -39,7 +39,6 @@ typedef struct
 extern Notification* notificationData[NOTIFICATION_SLOTS];
 extern uint8_t numOfNotifications;
 
-Notification* create_notification(uint16_t textLength);
 Notification* find_notification(int32_t id);
 Notification* add_notification(uint16_t textSize);
 void remove_notification_from_storage(uint8_t id);

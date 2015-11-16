@@ -10,7 +10,7 @@ Notification* notificationData[NOTIFICATION_SLOTS];
 static uint16_t freeNotificationMemory = NOTIFICATION_MEMORY_STORAGE_SIZE;
 uint8_t numOfNotifications = 0;
 
-Notification* create_notification(uint16_t textLength)
+static Notification* create_notification(uint16_t textLength)
 {
     Notification* notification = malloc(sizeof(Notification));
     notification->totalTextLength = textLength;
