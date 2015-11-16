@@ -121,7 +121,7 @@ static void received_config(DictionaryIterator *received)
 	config_disableNotifications = (data[7] & 0x80) != 0;
 	config_disableVibration = (data[7] & 0x01) != 0;
 	config_displayScrollShadow = (data[13] & 0x01) != 0;
-	config_scrollByPage = (data[13] & 0x02) != 0;
+	config_scrollByPage = PBL_IF_ROUND_ELSE(true, (data[13] & 0x02) != 0);
 	config_disconnectedNotification = (data[13] & 0x04) != 0;
 
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);

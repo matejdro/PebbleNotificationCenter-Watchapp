@@ -81,6 +81,22 @@ void nw_ui_refresh_notification(void)
     layer_set_frame(text_layer_get_layer(subTitle), GRect(0, 0, scrollSize.w - 4, 30000));
     layer_set_frame(text_layer_get_layer(text), GRect(0, 0, scrollSize.w - 4, 30000));
 
+    #ifdef PBL_SDK_3
+        if (config_scrollByPage)
+        {
+            //text_layer_enable_screen_text_flow_and_paging will take current position, so we must temporarily scroll to the top
+            scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
+
+            uint8_t xInset = PBL_IF_ROUND_ELSE(5, 0);
+
+            text_layer_enable_screen_text_flow_and_paging(title, xInset);
+            text_layer_enable_screen_text_flow_and_paging(subTitle, xInset);
+            text_layer_enable_screen_text_flow_and_paging(text, xInset);
+
+            scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), false);
+        }
+    #endif
+
     struct GSize titleSize = text_layer_get_content_size(title);
     struct GSize subtitleSize = text_layer_get_content_size(subTitle);
     struct GSize textSize = text_layer_get_content_size(text);
@@ -98,21 +114,11 @@ void nw_ui_refresh_notification(void)
     short verticalSize = titleSize.h + 1 + subtitleSize.h + 1 + textSize.h + 5 + additionalYOffset;
 
     if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
-    {
         verticalSize = windowHeight * 2;
-    }
 
-    #ifdef PBL_ROUND
-        //text_layer_enable_screen_text_flow_and_paging will take current position, so we must temporarily scroll to the top
-        scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
-
-        text_layer_enable_screen_text_flow_and_paging(title, 10);
-        text_layer_enable_screen_text_flow_and_paging(subTitle, 10);
-        text_layer_enable_screen_text_flow_and_paging(text, 10);
-
+    if (config_scrollByPage)
         verticalSize += windowHeight / 2;
-        scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), false);
-    #endif
+
 
     layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
     scroll_layer_set_content_size(scroll, GSize(scrollSize.w - 4, verticalSize));
@@ -157,7 +163,7 @@ void nw_ui_scroll_to_notification_start(void)
 
 void nw_ui_scroll_notification(bool down)
 {
-    int16_t scrollBy = PBL_IF_ROUND_ELSE(windowHeight, config_scrollByPage ? windowHeight : 50);
+    int16_t scrollBy = config_scrollByPage ? windowHeight : 50;
 
     GSize size = scroll_layer_get_content_size(scroll);
 
