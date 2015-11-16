@@ -103,11 +103,15 @@ void nw_ui_refresh_notification(void)
     }
 
     #ifdef PBL_ROUND
+        //text_layer_enable_screen_text_flow_and_paging will take current position, so we must temporarily scroll to the top
+        scroll_layer_set_content_offset(scroll, GPoint(0, 0), false);
+
         text_layer_enable_screen_text_flow_and_paging(title, 10);
         text_layer_enable_screen_text_flow_and_paging(subTitle, 10);
         text_layer_enable_screen_text_flow_and_paging(text, 10);
 
         verticalSize += windowHeight / 2;
+        scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), false);
     #endif
 
     layer_set_frame(proxyScrollLayer, GRect(0, 0, scrollSize.w - 4, verticalSize));
@@ -171,6 +175,7 @@ void nw_ui_scroll_notification(bool down)
         yScrollOffset = 0;
 
     scroll_layer_set_content_offset(scroll, GPoint(0, yScrollOffset), true);
+    APP_LOG(0, "Offset %d", scroll_layer_get_content_offset(scroll).y);
 }
 
 #ifdef PBL_COLOR
