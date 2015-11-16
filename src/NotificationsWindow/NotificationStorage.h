@@ -8,7 +8,7 @@
 #include <pebble.h>
 
 #define NOTIFICATION_SLOTS 10
-#define NOTIFICATION_MEMORY_STORAGE_SIZE 4700
+#define NOTIFICATION_MEMORY_STORAGE_SIZE 4000
 
 typedef struct
 {
