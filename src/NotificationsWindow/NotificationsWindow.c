@@ -128,6 +128,8 @@ void nw_set_busy_state(bool newState)
 
     void nw_start_dictation()
     {
+        nw_set_busy_state(false);
+
         if (dictationSession == NULL)
             dictationSession = dictation_session_create(400, dictation_session_callback, NULL);
 
