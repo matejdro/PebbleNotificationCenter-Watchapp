@@ -56,9 +56,9 @@ static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
             graphics_text_attributes_enable_paging(textBox->attributes, textOriginPointOnScreen, textAreaFrame);
         }
 
-        textBox->bounds.size = graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes);
+        textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes).h);
     #else
-        textBox->bounds.size = graphics_text_layout_get_content_size(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT);
+        textBox->bounds.size =  GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT).h);
     #endif
 }
 
