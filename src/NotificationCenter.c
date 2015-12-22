@@ -224,8 +224,6 @@ int main(void) {
 		appmessage_max_size = 124;
 	#endif
 
-	APP_LOG(0, "AppMessage size: %u", (unsigned int) appmessage_max_size);
-
 	app_message_register_inbox_received(received_data);
 	app_message_register_outbox_sent(sent_data);
 	app_message_open(appmessage_max_size, 408);
