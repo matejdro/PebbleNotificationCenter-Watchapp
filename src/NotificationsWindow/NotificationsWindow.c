@@ -350,11 +350,6 @@ void notification_window_init(void)
 
 
     window_set_click_config_provider(notifyWindow, (ClickConfigProvider) nw_buttonconfig);
-
-#ifdef PBL_SDK_2
-	window_set_fullscreen(notifyWindow, true);
-#endif
-
     window_stack_push(notifyWindow, true);
 
     if (!config_dontClose)

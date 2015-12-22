@@ -19,11 +19,7 @@ static TextLayer* quitText;
 
 static MenuLayer* menuLayer;
 
-#ifdef PBL_SDK_2
-static InverterLayer* inverterLayer;
-#else
 static StatusBarLayer* statusBar;
-#endif
 
 static bool firstAppear = true;
 static bool menuLoaded = false;
@@ -303,17 +299,8 @@ static void window_appears(Window* window)
 
     menu_layer_set_click_config_onto_window(menuLayer, window);
     layer_add_child(topLayer, menu_layer_get_layer(menuLayer));
-
-#ifdef PBL_SDK_2
-	if (config_invertColors)
-	{
-		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
-		layer_add_child(topLayer, (Layer*) inverterLayer);
-	}
-#else
 	statusBar = status_bar_layer_create();
 	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
-#endif
 
 	historyCleared = false;
 
@@ -334,13 +321,7 @@ static void window_disappears(Window* me)
 	text_layer_destroy(quitText);
 
     menu_layer_destroy(menuLayer);
-
-#ifdef PBL_SDK_2
-	if (inverterLayer != NULL)
-		inverter_layer_destroy(inverterLayer);
-#else
 	status_bar_layer_destroy(statusBar);
-#endif
 
 	closingMode = false;
 }

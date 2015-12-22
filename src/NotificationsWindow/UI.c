@@ -25,10 +25,6 @@ static int16_t windowHeight;
 static int16_t statusbarSize;
 static int16_t yScrollOffset = 0;
 
-#ifdef PBL_SDK_2
-    static InverterLayer* inverterLayer;
-#endif
-
 #ifdef PBL_COLOR
 static BitmapLayer* notificationBitmapLayer;
 static Layer* bitmapShadingLayer;
@@ -360,23 +356,15 @@ void nw_ui_load(Window* window)
     scroll_layer_add_child(scroll, textDisplayLayer);
     layer_set_update_proc(textDisplayLayer, text_display_layer_paint);
 
-    #ifdef PBL_SDK_2
-        if (config_invertColors)
-        {
-            inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
-            layer_add_child(topLayer, (Layer*) inverterLayer);
-        }
-    #else
-        title.attributes = graphics_text_attributes_create();
-        subtitle.attributes = graphics_text_attributes_create();
-        body.attributes = graphics_text_attributes_create();
+    title.attributes = graphics_text_attributes_create();
+    subtitle.attributes = graphics_text_attributes_create();
+    body.attributes = graphics_text_attributes_create();
 
-        #ifdef PBL_ROUND
-            graphics_text_attributes_enable_screen_text_flow(title.attributes, 5);
-            graphics_text_attributes_enable_screen_text_flow(subtitle.attributes, 5);
-            graphics_text_attributes_enable_screen_text_flow(body.attributes, 5);
-        #endif
-#endif
+    #ifdef PBL_ROUND
+        graphics_text_attributes_enable_screen_text_flow(title.attributes, 5);
+        graphics_text_attributes_enable_screen_text_flow(subtitle.attributes, 5);
+        graphics_text_attributes_enable_screen_text_flow(body.attributes, 5);
+    #endif
 }
 
 void nw_ui_unload()
@@ -388,14 +376,9 @@ void nw_ui_unload()
     scroll_layer_destroy(scroll);
     gbitmap_destroy(busyIndicator);
 
-    #ifdef PBL_SDK_2
-        if (inverterLayer != NULL)
-            inverter_layer_destroy(inverterLayer);
-    #else
-         graphics_text_attributes_destroy(title.attributes);
-        graphics_text_attributes_destroy(subtitle.attributes);
-        graphics_text_attributes_destroy(body.attributes);
-#endif
+    graphics_text_attributes_destroy(title.attributes);
+    graphics_text_attributes_destroy(subtitle.attributes);
+    graphics_text_attributes_destroy(body.attributes);
 
     #ifdef PBL_COLOR
         bitmap_layer_destroy(notificationBitmapLayer);

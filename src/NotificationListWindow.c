@@ -20,11 +20,7 @@ static char** dates;
 
 static MenuLayer* menuLayer;
 
-#ifdef PBL_SDK_2
-static InverterLayer* inverterLayer;
-#else
 static StatusBarLayer* statusBar;
-#endif
 
 static GBitmap* normalNotification;
 static GBitmap* ongoingNotification;
@@ -365,15 +361,8 @@ static void window_appear(Window* me) {
 
 	layer_add_child(topLayer, (Layer*) menuLayer);
 
-#ifdef PBL_SDK_2
-	if (config_invertColors) {
-		inverterLayer = inverter_layer_create(layer_get_frame(topLayer));
-		layer_add_child(topLayer, (Layer*) inverterLayer);
-	}
-#else
 	statusBar = status_bar_layer_create();
 	layer_add_child(topLayer, status_bar_layer_get_layer(statusBar));
-#endif
 
 	pickedEntry = -1;
 
@@ -388,13 +377,7 @@ static void window_disappear(Window* me) {
 	gbitmap_destroy(ongoingNotification);
 
 	menu_layer_destroy(menuLayer);
-
-#ifdef PBL_SDK_2
-	if (inverterLayer != NULL)
-		inverter_layer_destroy(inverterLayer);
-#else
 	status_bar_layer_destroy(statusBar);
-#endif
 
 	freeData();
 
@@ -418,10 +401,6 @@ void list_window_init(void) {
 					.disappear = window_disappear
 
 			});
-
-#ifdef PBL_SDK_2
-	window_set_fullscreen(window, false);
-#endif
 
 
 	window_stack_push(window, false /* Animated */);
