@@ -21,7 +21,6 @@ bool config_dontClose;
 bool config_showActive;
 bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
-bool config_invertColors;
 bool config_disableNotifications;
 bool config_disableVibration;
 bool config_displayScrollShadow;
@@ -136,13 +135,6 @@ static void received_config(DictionaryIterator *received)
 		config_periodicVibrationTotalDuration += config_periodicVibrationPattern[i / 2];
 	}
 
-	bool newInvertColors = (data[7] & 0x40) != 0;
-	if (newInvertColors != config_invertColors)
-	{
-		persist_write_bool(0, newInvertColors);
-		config_invertColors = newInvertColors;
-	}
-
 	gotConfig = true;
 	loadingMode = false;
 
@@ -249,8 +241,6 @@ int main(void) {
 	app_message_outbox_send();
 
 	loadingMode = true;
-
-	config_invertColors = persist_read_bool(0);
 
 	switchWindow(0);
 
