@@ -13,22 +13,28 @@
     "media": [
       {
         "menuIcon": true,
-        "type": "png",
+        "type": "bitmap",
         "name": "ICON",
-        "file": "icon.png"
+        "file": "icon.png",
+        "memoryFormat": "1Bit"
       },
       {
-        "type": "png",
+        "type": "bitmap",
+        "name": "BUBBLE",
+        "file": "bubble.png"
+      },
+      {
+        "type": "bitmap",
         "name": "INDICATOR_BUSY",
         "file": "busy.png"
       },
       {
-        "type": "png",
+        "type": "bitmap",
         "name": "COGWHEEL",
         "file": "cogwheel.png"
       },
       {
-        "type": "png",
+        "type": "bitmap",
         "name": "RECENT",
         "file": "recent.png"
       }

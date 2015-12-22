@@ -14,13 +14,6 @@
 	#define STATUSBAR_Y_OFFSET 0
 #endif
 
-#ifdef PBL_COLOR
-    #define PNG_COMPOSITING_MODE GCompOpSet
-#else
-	#define PNG_COMPOSITING_MODE GCompOpAssign
-#endif
-
-
 extern uint8_t config_titleFont;
 extern uint8_t config_subtitleFont;
 extern uint8_t config_bodyFont;

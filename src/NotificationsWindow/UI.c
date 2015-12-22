@@ -233,7 +233,7 @@ static void statusbarback_paint(Layer* layer, GContext* ctx)
 
     if (busy)
     {
-        graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
+        graphics_context_set_compositing_mode(ctx, GCompOpSet);
         graphics_draw_bitmap_in_rect(ctx, busyIndicator, PBL_IF_ROUND_ELSE(GRect(120, 15, 9, 10),GRect(80, 3, 9, 10)));
     }
 }

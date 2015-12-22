@@ -269,7 +269,7 @@ static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 		MenuIndex *cell_index, void *data) {
 	graphics_context_set_text_color(ctx, GColorBlack);
-	graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
+	graphics_context_set_compositing_mode(ctx, GCompOpSet);
 
 	GRect bounds = layer_get_frame(cell_layer);
 
@@ -339,7 +339,7 @@ void list_window_data_received(int packetId, DictionaryIterator* data) {
 static void window_appear(Window* me) {
 	setCurWindow(2);
 
-	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_ICON);
+	normalNotification = gbitmap_create_with_resource(RESOURCE_ID_BUBBLE);
 	ongoingNotification = gbitmap_create_with_resource(RESOURCE_ID_COGWHEEL);
 
 	Layer* topLayer = window_get_root_layer(window);

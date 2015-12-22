@@ -135,7 +135,7 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuI
 
     const SimpleMenuItem* item = &mainMenuSections[section].items[index];
 
-    graphics_context_set_compositing_mode(ctx, PNG_COMPOSITING_MODE);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
     menu_cell_basic_draw(ctx, cell_layer, item->title, item->subtitle, item->icon);
 }
 
@@ -254,7 +254,7 @@ static void window_appears(Window* window)
 	uint16_t windowWidth = windowBounds.size.w;
 	uint16_t windowHeight = windowBounds.size.h - STATUSBAR_Y_OFFSET;
 
-	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_ICON);
+	currentIcon = gbitmap_create_with_resource(RESOURCE_ID_BUBBLE);
 	historyIcon = gbitmap_create_with_resource(RESOURCE_ID_RECENT);
 
 	loadingLayer = text_layer_create(GRect(0, STATUSBAR_Y_OFFSET, windowWidth, windowHeight));
