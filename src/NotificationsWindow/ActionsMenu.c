@@ -36,7 +36,7 @@ static int16_t menu_get_row_height_callback(MenuLayer *me,  MenuIndex *cell_inde
 }
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-	graphics_context_set_text_color(ctx, GColorBlack);
+	graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorBlack, menu_cell_layer_is_highlighted(cell_layer) ? GColorWhite : GColorBlack));
 	graphics_draw_text(ctx, actions[cell_index->row], fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), GRect(5, 0, 144 - 20 - 10, 27), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 }
 

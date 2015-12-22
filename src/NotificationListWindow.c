@@ -268,7 +268,7 @@ static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 
 static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 		MenuIndex *cell_index, void *data) {
-	graphics_context_set_text_color(ctx, GColorBlack);
+	graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorBlack, menu_cell_layer_is_highlighted(cell_layer) ? GColorWhite : GColorBlack));
 	graphics_context_set_compositing_mode(ctx, GCompOpSet);
 
 	GRect bounds = layer_get_frame(cell_layer);
