@@ -5,7 +5,7 @@
 #include "NotificationListWindow.h"
 #include "NotificationsWindow/Comm.h"
 
-const uint16_t PROTOCOL_VERSION = 33;
+const uint16_t PROTOCOL_VERSION = 34;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
