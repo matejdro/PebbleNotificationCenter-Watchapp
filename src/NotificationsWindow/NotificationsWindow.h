@@ -18,8 +18,8 @@ void nw_vibrate(VibePattern* vibePattern, uint16_t totalLength);
 void nw_remove_notification(uint8_t id, bool closeAutomatically);
 void nw_fix_picked_notification();
 
-#ifndef PBL_PLATFORM_APLITE
-    void nw_start_dictation();
+#ifdef PBL_MICROPHONE
+void nw_start_dictation();
 #endif
 
 extern bool appIdle;

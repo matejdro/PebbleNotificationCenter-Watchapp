@@ -313,7 +313,7 @@ void nw_received_data_callback(uint8_t module, uint8_t id, DictionaryIterator* r
         received_message_image(received);
     }
 #endif
-#ifndef PBL_PLATFORM_APLITE
+#ifdef PBL_MICROPHONE
     else if (module == 4 && id == 1)
     {
         nw_start_dictation();

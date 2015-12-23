@@ -27,7 +27,7 @@ uint16_t bitmapReceivingBufferHead;
 GBitmap* notificationBitmap = NULL;
 #endif
 
-#ifndef PBL_PLATFORM_APLITE
+#ifdef PBL_MICROPHONE
 static DictationSession* dictationSession = NULL;
 #endif
 
@@ -117,8 +117,8 @@ void nw_set_busy_state(bool newState)
 }
 
 
-#ifndef PBL_PLATFORM_APLITE
-    static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, char *transcription, void *context)
+#ifdef PBL_MICROPHONE
+static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, char *transcription, void *context)
     {
         if (status == DictationSessionStatusSuccess)
         {
@@ -313,8 +313,8 @@ static void window_unload(Window *window)
         }
     #endif
 
-    #ifndef PBL_PLATFORM_APLITE
-        if (dictationSession != NULL)
+    #ifdef PBL_MICROPHONE
+    if (dictationSession != NULL)
             dictation_session_destroy(dictationSession);
     #endif
 
