@@ -199,10 +199,8 @@ static void received_message_dismiss(DictionaryIterator *received)
         if (entry->id != id)
             continue;
 
-        nw_remove_notification(i, close);
-
         nw_set_busy_state(false);
-
+        nw_remove_notification(i, close);
         break;
     }
 }
