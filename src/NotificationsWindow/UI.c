@@ -301,9 +301,15 @@ void nw_ui_update_statusbar_clock()
     else
         formatString = "%I:%M %p";
 
-    strftime(clockText, 9, formatString, lTime);
-    //text_layer_set_text(statusClock, "99:99 PM");
-    text_layer_set_text(statusClock, clockText);
+    char tmpClockText[9];
+    strftime(tmpClockText, 9, formatString, lTime);
+
+    //Only update screen when actual clock changes
+    if (strcmp(tmpClockText, clockText) != 0)
+    {
+        strcpy(clockText, tmpClockText);
+        text_layer_set_text(statusClock, clockText);
+    }
 }
 
 void nw_ui_load(Window* window)
