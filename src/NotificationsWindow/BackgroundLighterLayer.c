@@ -47,7 +47,7 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
             if (config_whiteText)
             {
                 //Decrease luminance of the pixel until it is dark enough to not make text in front unreadable
-                while (getLuminance(curPixel) > MAX_LUMINANCE * 1 / 5)
+                while (getLuminance(curPixel) > MAX_LUMINANCE * 2 / 5)
                 {
                     if (curPixel.r > 0)
                         curPixel.r--;
