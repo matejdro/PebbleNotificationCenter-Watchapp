@@ -8,11 +8,7 @@
 #ifndef NOTIFICATIONCENTER_H_
 #define NOTIFICATIONCENTER_H_
 
-#ifdef PBL_SDK_3
-    #define STATUSBAR_Y_OFFSET STATUS_BAR_LAYER_HEIGHT
-#else
-	#define STATUSBAR_Y_OFFSET 0
-#endif
+#define STATUSBAR_Y_OFFSET STATUS_BAR_LAYER_HEIGHT
 
 extern uint8_t config_titleFont;
 extern uint8_t config_subtitleFont;
@@ -31,7 +27,7 @@ extern bool config_dontClose;
 extern bool config_showActive;
 extern bool config_lightScreen;
 extern bool config_dontVibrateWhenCharging;
-extern bool config_invertColors;
+extern bool config_whiteText;
 extern bool config_disableNotifications;
 extern bool config_disableVibration;
 extern bool config_displayScrollShadow;

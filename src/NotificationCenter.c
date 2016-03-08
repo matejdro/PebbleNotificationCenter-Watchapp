@@ -22,6 +22,7 @@ bool config_showActive;
 bool config_lightScreen;
 bool config_dontVibrateWhenCharging;
 bool config_disableNotifications;
+bool config_whiteText;
 bool config_disableVibration;
 bool config_displayScrollShadow;
 bool config_scrollByPage;
@@ -118,6 +119,7 @@ static void received_config(DictionaryIterator *received)
 	config_lightScreen = (data[7] & 0x10) != 0;
 	config_dontVibrateWhenCharging = (data[7] & 0x20) != 0;
 	config_disableNotifications = (data[7] & 0x80) != 0;
+	config_whiteText = (data[7] & 0x740) != 0;
 	config_disableVibration = (data[7] & 0x01) != 0;
 	config_displayScrollShadow = (data[13] & 0x01) != 0;
 	config_scrollByPage = PBL_IF_ROUND_ELSE(true, (data[13] & 0x02) != 0);

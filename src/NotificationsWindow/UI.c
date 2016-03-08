@@ -124,11 +124,24 @@ void nw_ui_refresh_notification(void)
 
 static void text_display_layer_paint(Layer* layer, GContext* ctx)
 {
-    graphics_context_set_text_color(ctx, GColorBlack);
+    if (config_whiteText)
+        graphics_context_set_text_color(ctx, GColorWhite);
+    else
+        graphics_context_set_text_color(ctx, GColorBlack);
 
     graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
     graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
     graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
+}
+
+static void background_layer_paint(Layer* layer, GContext* ctx)
+{
+    if (config_whiteText)
+        graphics_context_set_fill_color(ctx, GColorBlack);
+    else
+        graphics_context_set_fill_color(ctx, GColorWhite);
+
+    graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
 
 void nw_ui_refresh_picked_indicator(void)
@@ -318,22 +331,29 @@ void nw_ui_load(Window* window)
     text_layer_set_text_alignment(statusClock, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentRight));
     layer_add_child(statusbar, (Layer*) statusClock);
 
+    Layer* textBackgroundLayer = layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
+    layer_set_update_proc(textBackgroundLayer, background_layer_paint);
+    layer_add_child(topLayer, textBackgroundLayer);
+
 #ifdef  PBL_COLOR
     int16_t bitmapXOffset = (windowBounds.size.w - 144) / 2;
-    GRect bitmapFrame = GRect(bitmapXOffset, statusbarSize, 144, windowHeight);
+    GRect bitmapFrame = GRect(bitmapXOffset, 0, 144, windowHeight);
 
     notificationBitmapLayer = bitmap_layer_create(bitmapFrame);
     bitmap_layer_set_alignment(notificationBitmapLayer, PBL_IF_ROUND_ELSE(GAlignTop, GAlignCenter));
-    layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
+    layer_add_child(textBackgroundLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
     bitmapShadingLayer = layer_create(bitmapFrame);
     layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
-    layer_add_child(topLayer, bitmapShadingLayer);
+    layer_set_clips(bitmapShadingLayer, false);
+    layer_set_bounds(bitmapShadingLayer, GRect(0, statusbarSize, bitmapFrame.size.w, bitmapFrame.size.h));
+    layer_add_child(textBackgroundLayer, bitmapShadingLayer);
 #endif
 
-    scroll = scroll_layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
+    scroll = scroll_layer_create(GRect(0, 0, windowBounds.size.w, windowBounds.size.h - statusbarSize));
     scroll_layer_set_shadow_hidden(scroll, !config_displayScrollShadow);
-    layer_add_child(topLayer, (Layer*) scroll);
+
+    layer_add_child(textBackgroundLayer, scroll_layer_get_layer(scroll));
 #ifdef PBL_COLOR
     scroll_layer_set_callbacks(scroll, (ScrollLayerCallbacks) {.content_offset_changed_handler = on_scroll_changed});
 #endif
