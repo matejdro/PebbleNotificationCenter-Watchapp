@@ -14,9 +14,7 @@ typedef struct
     char* text;
     GFont font;
     GRect bounds;
-#if PBL_SDK_3
     GTextAttributes* attributes;
-#endif
 } TextParameters;
 
 static const GTextAlignment TEXT_ALIGNMENT = PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft);
@@ -45,7 +43,6 @@ TextParameters body;
 
 static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
 {
-    #ifdef PBL_SDK_3
         if (config_scrollByPage)
         {
             GPoint textOriginPointOnScreen = GPoint(textBox->bounds.origin.x % textAreaFrame.size.w + textAreaFrame.origin.x, textBox->bounds.origin.y % textAreaFrame.size.h + textAreaFrame.origin.y);
@@ -53,9 +50,6 @@ static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
         }
 
         textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes).h);
-    #else
-        textBox->bounds.size =  GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT).h);
-    #endif
 }
 
 void nw_ui_refresh_notification(void)
@@ -132,16 +126,9 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
 {
     graphics_context_set_text_color(ctx, GColorBlack);
 
-    #ifdef PBL_SDK_3
-        graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
-        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
-        graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
-    #else
-    graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
-        graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
-        graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, NULL);
-    #endif
-
+    graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
+    graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
+    graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
 }
 
 void nw_ui_refresh_picked_indicator(void)
