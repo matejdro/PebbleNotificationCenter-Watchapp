@@ -169,13 +169,8 @@ static void bt_handler(bool connected)
         static char text[] = "Bluetooth Disconnected\0\0Your pebble has been disconnected from the phone.";
         static uint8_t textSize = sizeof(text) / sizeof(char);
 
-        //Find empty notification ID
-        int32_t id = 0;
-        while (find_notification(id) != NULL)
-            id++;
-
         Notification* notification = add_notification(textSize - 1);
-        notification->id = id;
+        notification->id = SPECIAL_NOTIFICATION_BT_DISCONNECTED;
         notification->inList = false;
         notification->scrollToEnd = false;
         notification->showMenuOnSelectPress = false;
@@ -197,6 +192,10 @@ static void bt_handler(bool connected)
 
         nw_switch_to_notification(numOfNotifications - 1);
         vibes_double_pulse();
+    }
+    else
+    {
+        nw_remove_notification_with_id(SPECIAL_NOTIFICATION_BT_DISCONNECTED, true);
     }
 }
 
