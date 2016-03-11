@@ -84,7 +84,17 @@ void nw_fix_picked_notification()
         nw_switch_to_notification(numOfNotifications - 1);
 }
 
-void nw_remove_notification(uint8_t id, bool closeAutomatically)
+bool nw_remove_notification_with_id(int32_t id, bool closeAutomatically)
+{
+    int8_t index = find_notification_index(id);
+    if (index < 0)
+        return false;
+
+    nw_remove_notification((uint8_t) index, closeAutomatically);
+    return true;
+}
+
+void nw_remove_notification(uint8_t index, bool closeAutomatically)
 {
     if (numOfNotifications <= 1 && closeAutomatically)
     {
@@ -93,11 +103,11 @@ void nw_remove_notification(uint8_t id, bool closeAutomatically)
         return;
     }
 
-    remove_notification_from_storage(id);
+    remove_notification_from_storage(index);
 
-    bool differentNotification = pickedNotification == id;
+    bool differentNotification = pickedNotification == index;
 
-    if (pickedNotification >= id && pickedNotification > 0)
+    if (pickedNotification >= index && pickedNotification > 0)
     {
         pickedNotification--;
     }

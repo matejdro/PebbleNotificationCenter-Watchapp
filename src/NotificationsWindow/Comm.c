@@ -193,16 +193,8 @@ static void received_message_dismiss(DictionaryIterator *received)
     int32_t id = dict_find(received, 2)->value->int32;
     bool close = !dict_find(received, 3)->value->uint8 == 1;
 
-    for (int i = 0; i < numOfNotifications; i++)
-    {
-        Notification* entry = notificationData[i];
-        if (entry->id != id)
-            continue;
-
-        nw_set_busy_state(false);
-        nw_remove_notification(i, close);
-        break;
-    }
+    if (nw_remove_notification_with_id(id, close))
+        nw_set_busy_state(true);
 }
 
 static void received_message_more_text(DictionaryIterator *received)

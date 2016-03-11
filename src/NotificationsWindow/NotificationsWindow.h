@@ -15,7 +15,8 @@ void nw_set_busy_state(bool newState);
 Notification* nw_get_displayed_notification();
 void nw_switch_to_notification(uint8_t index);
 void nw_vibrate(VibePattern* vibePattern, uint16_t totalLength);
-void nw_remove_notification(uint8_t id, bool closeAutomatically);
+bool nw_remove_notification_with_id(int32_t id, bool closeAutomatically);
+void nw_remove_notification(uint8_t index, bool closeAutomatically);
 void nw_fix_picked_notification();
 
 #ifdef PBL_MICROPHONE

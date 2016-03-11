@@ -79,3 +79,15 @@ Notification* find_notification(int32_t id)
     return NULL;
 }
 
+int8_t find_notification_index(int32_t id)
+{
+    for (int i = 0; i < numOfNotifications; i++)
+    {
+        Notification* notification = notificationData[i];
+        if (notification != NULL && notification->id == id)
+            return i;
+    }
+
+    return -1;
+}
+

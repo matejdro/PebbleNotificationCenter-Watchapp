@@ -43,6 +43,6 @@ Notification* find_notification(int32_t id);
 Notification* add_notification(uint16_t textSize);
 void remove_notification_from_storage(uint8_t id);
 void destroy_notification(Notification* notification);
-
+int8_t find_notification_index(int32_t id);
 
 #endif //NOTIFICATIONCENTER_NOTIFICATIONSTORAGE_H
