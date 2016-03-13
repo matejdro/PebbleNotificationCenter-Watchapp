@@ -194,7 +194,7 @@ static void received_message_dismiss(DictionaryIterator *received)
     bool close = !dict_find(received, 3)->value->uint8 == 1;
 
     if (nw_remove_notification_with_id(id, close))
-        nw_set_busy_state(true);
+        nw_set_busy_state(false);
 }
 
 static void received_message_more_text(DictionaryIterator *received)
