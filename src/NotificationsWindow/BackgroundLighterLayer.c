@@ -21,11 +21,11 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
 {
     GBitmap* frameBuffer = graphics_capture_frame_buffer(ctx);
 
-    GRect layerBounds = layer_get_bounds(me);
-    uint16_t x1 = layerBounds.origin.x;
-    uint16_t y1 = layerBounds.origin.y;
-    uint16_t x2 = x1 + layerBounds.size.w;
-    uint16_t y2 = y1 + layerBounds.size.h;
+    GRect layerFrame = layer_get_frame(me);
+    uint16_t x1 = layerFrame.origin.x;
+    uint16_t y1 = layerFrame.origin.y;
+    uint16_t x2 = x1 + layerFrame.size.w;
+    uint16_t y2 = y1 + layerFrame.size.h;
 
     for (uint16_t y = y1; y < y2; y++)
     {

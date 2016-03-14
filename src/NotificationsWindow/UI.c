@@ -343,23 +343,22 @@ void nw_ui_load(Window* window)
 
 #ifdef  PBL_COLOR
     int16_t bitmapXOffset = (windowBounds.size.w - 144) / 2;
-    GRect bitmapFrame = GRect(bitmapXOffset, 0, 144, windowHeight);
+    GRect bitmapFrame = GRect(bitmapXOffset, statusbarSize, 144, windowHeight);
 
     notificationBitmapLayer = bitmap_layer_create(bitmapFrame);
     bitmap_layer_set_alignment(notificationBitmapLayer, PBL_IF_ROUND_ELSE(GAlignTop, GAlignCenter));
-    layer_add_child(textBackgroundLayer, bitmap_layer_get_layer(notificationBitmapLayer));
+    layer_add_child(topLayer, bitmap_layer_get_layer(notificationBitmapLayer));
 
     bitmapShadingLayer = layer_create(bitmapFrame);
     layer_set_update_proc(bitmapShadingLayer, backgroud_lighter_layer_update);
     layer_set_clips(bitmapShadingLayer, false);
-    layer_set_bounds(bitmapShadingLayer, GRect(0, statusbarSize, bitmapFrame.size.w, bitmapFrame.size.h));
-    layer_add_child(textBackgroundLayer, bitmapShadingLayer);
+    layer_add_child(topLayer, bitmapShadingLayer);
 #endif
 
-    scroll = scroll_layer_create(GRect(0, 0, windowBounds.size.w, windowBounds.size.h - statusbarSize));
+    scroll = scroll_layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
     scroll_layer_set_shadow_hidden(scroll, !config_displayScrollShadow);
 
-    layer_add_child(textBackgroundLayer, scroll_layer_get_layer(scroll));
+    layer_add_child(topLayer, scroll_layer_get_layer(scroll));
 #ifdef PBL_COLOR
     scroll_layer_set_callbacks(scroll, (ScrollLayerCallbacks) {.content_offset_changed_handler = on_scroll_changed});
 #endif
