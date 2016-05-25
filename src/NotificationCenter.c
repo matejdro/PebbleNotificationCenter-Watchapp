@@ -208,6 +208,20 @@ void closeApp(void)
 	closingMode = true;
 }
 
+static uint32_t getCapabilities(uint16_t maxInboxSize)
+{
+	uint32_t serializedCapabilities = 0;
+
+	serializedCapabilities |= PBL_IF_MICROPHONE_ELSE(0x01, 0x00);
+	serializedCapabilities |= PBL_IF_COLOR_ELSE(0x02, 0x00);
+	serializedCapabilities |= PBL_IF_ROUND_ELSE(0x04, 0x00);
+	serializedCapabilities |= PBL_IF_SMARTSTRAP_ELSE(0x08, 0x00);
+	serializedCapabilities |= PBL_IF_HEALTH_ELSE(0x10, 0x00);
+	serializedCapabilities |= maxInboxSize << 16;
+
+	return serializedCapabilities;
+}
+
 int main(void) {
 	appmessage_max_size = app_message_inbox_size_maximum();
 	if (appmessage_max_size > 4096)
@@ -228,16 +242,7 @@ int main(void) {
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
 
-	uint8_t platform = 0; //Applite
-	#ifdef PBL_PLATFORM_BASALT
-		platform = 1;
-    #endif
-	#ifdef PBL_PLATFORM_CHALK
-		platform = 2;
-    #endif
-
-	dict_write_uint8(iterator, 3, platform);
-	dict_write_uint32(iterator, 4, appmessage_max_size);
+	dict_write_uint32(iterator, 3, getCapabilities(appmessage_max_size));
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
