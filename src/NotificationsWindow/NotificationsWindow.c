@@ -169,7 +169,7 @@ static void bt_handler(bool connected)
         static char text[] = "Bluetooth Disconnected\0\0Your pebble has been disconnected from the phone.";
         static uint8_t textSize = sizeof(text) / sizeof(char);
 
-        Notification* notification = add_notification(textSize - 1);
+        Notification* notification = add_notification(textSize - 1, 0);
         notification->id = SPECIAL_NOTIFICATION_BT_DISCONNECTED;
         notification->inList = false;
         notification->scrollToEnd = false;

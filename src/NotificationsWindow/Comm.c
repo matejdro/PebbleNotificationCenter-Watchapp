@@ -2,12 +2,14 @@
 // Created by Matej on 20.10.2015.
 //
 
+#include <pebble.h>
 #include "Comm.h"
 #include "pebble.h"
 #include "ActionsMenu.h"
 #include "NotificationsWindow.h"
 #include "../NotificationCenter.h"
 #include "UI.h"
+#include "NotificationStorage.h"
 
 static int8_t pickedAction = -1;
 
@@ -91,13 +93,19 @@ static void received_message_new_notification(DictionaryIterator *received)
         periodicVibrationPeriod = newPeriodicVibration;
 
     uint16_t textSize = configBytes[4] << 8 | configBytes[5];
+    uint16_t iconSize = 0;
+    #ifndef PBL_LOW_MEMORY
+        Tuple* iconSizeTuple = dict_find(received, 5);
+        if (iconSizeTuple != NULL)
+            iconSize = iconSizeTuple->value->uint16;
+    #endif
 
     uint8_t numOfVibrationBytes = configBytes[17];
 
     Notification* notification = find_notification(id);
     if (notification == NULL)
     {
-        notification = add_notification(textSize);
+        notification = add_notification(textSize, iconSize);
 
         bool blockVibration = false;
         int32_t oldId = dict_find(received, 4)->value->int32;
@@ -140,6 +148,20 @@ static void received_message_new_notification(DictionaryIterator *received)
             elapsedTime = 0;
         }
     }
+
+    #ifndef PBL_LOW_MEMORY
+        if (notification->notificationIcon != NULL)
+            gbitmap_destroy(notification->notificationIcon);
+
+        if (notification->notificationIconData != NULL)
+        {
+            memcpy(notification->notificationIconData, dict_find(received, 6)->value->data, notification->iconSize);
+            notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
+        }
+        else
+            notification->notificationIcon = NULL;
+    #endif
+
 
     notification->id = id;
     notification->inList = inList;

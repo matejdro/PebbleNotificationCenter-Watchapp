@@ -9,6 +9,8 @@
 #include "../NotificationCenter.h"
 #include "BackgroundLighterLayer.h"
 
+#define NOTIFICATION_ICON_SIZE 30
+
 typedef struct
 {
     char* text;
@@ -40,6 +42,9 @@ static Layer* textDisplayLayer;
 TextParameters title;
 TextParameters subtitle;
 TextParameters body;
+#ifndef PBL_LOW_MEMORY
+GPoint iconPosition;
+#endif
 
 static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
 {
@@ -61,6 +66,10 @@ void nw_ui_refresh_notification(void)
     Notification* notification;
 
     unsigned short additionalYOffset = 0;
+
+    GRect textAreaFrame = layer_get_frame(scroll_layer_get_layer(scroll));
+    uint16_t titleMaximumWidth = textAreaFrame.size.w;
+    uint16_t titleMinimumHeight = 0;
 
     if (numOfNotifications < 1)
     {
@@ -86,10 +95,22 @@ void nw_ui_refresh_notification(void)
         subtitle.font = fonts_get_system_font(config_getFontResource(notification->fontSubtitle));
         body.font = fonts_get_system_font(config_getFontResource(notification->fontBody));
 
-    #ifdef PBL_COLOR
-        if (notification->imageSize > 0)
-            additionalYOffset = windowHeight;
+        #ifdef PBL_COLOR
+            if (notification->imageSize > 0)
+                additionalYOffset = windowHeight;
+        #endif
+
+    #ifndef PBL_LOW_MEMORY
+            if (notification->notificationIcon != NULL)
+            {
+                const uint8_t topMargin = 5;
+                uint16_t rightMargin = PBL_IF_ROUND_ELSE(20, 4);
+                iconPosition = GPoint(textAreaFrame.size.w - NOTIFICATION_ICON_SIZE - rightMargin, additionalYOffset + topMargin);
+                titleMaximumWidth = iconPosition.x;
+                titleMinimumHeight = NOTIFICATION_ICON_SIZE + topMargin;
+            }
     #endif
+
     }
 
 
@@ -97,10 +118,11 @@ void nw_ui_refresh_notification(void)
     subtitle.text = subtitleText;
     body.text = bodyText;
 
-    GRect textAreaFrame = layer_get_frame(scroll_layer_get_layer(scroll));
-
     title.bounds.origin = GPoint(2, additionalYOffset);
-    calculateTextSize(&title, textAreaFrame);
+    calculateTextSize(&title, (GRect) {.origin = textAreaFrame.origin, .size = GSize(titleMaximumWidth, textAreaFrame.size.h)});
+    if (title.bounds.size.h < titleMinimumHeight)
+        title.bounds.size.h = titleMinimumHeight;
+
     subtitle.bounds.origin = GPoint(2, title.bounds.size.h + 1 + title.bounds.origin.y);
     calculateTextSize(&subtitle, textAreaFrame);
     body.bounds.origin = GPoint(2, subtitle.bounds.size.h + 1 + subtitle.bounds.origin.y);
@@ -124,6 +146,7 @@ void nw_ui_refresh_notification(void)
 
 static void text_display_layer_paint(Layer* layer, GContext* ctx)
 {
+
     if (config_whiteText)
         graphics_context_set_text_color(ctx, GColorWhite);
     else
@@ -132,6 +155,15 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
     graphics_draw_text(ctx, title.text, title.font, title.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, title.attributes);
     graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
     graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
+
+    #ifndef PBL_LOW_MEMORY
+        Notification* curNotification = nw_get_displayed_notification();
+        if (curNotification->notificationIcon != NULL)
+        {
+            graphics_context_set_compositing_mode(ctx, GCompOpSet);
+            graphics_draw_bitmap_in_rect(ctx, curNotification->notificationIcon, (GRect) {.origin = iconPosition, .size = GSize(NOTIFICATION_ICON_SIZE, NOTIFICATION_ICON_SIZE)});
+        }
+    #endif
 }
 
 static void background_layer_paint(Layer* layer, GContext* ctx)

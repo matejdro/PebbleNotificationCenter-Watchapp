@@ -10,6 +10,10 @@
 
 #define STATUSBAR_Y_OFFSET STATUS_BAR_LAYER_HEIGHT
 
+#ifdef PBL_PLATFORM_APLITE
+    #define PBL_LOW_MEMORY
+#endif
+
 extern uint8_t config_titleFont;
 extern uint8_t config_subtitleFont;
 extern uint8_t config_bodyFont;

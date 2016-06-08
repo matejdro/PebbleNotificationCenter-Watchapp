@@ -6,9 +6,15 @@
 #define NOTIFICATIONCENTER_NOTIFICATIONSTORAGE_H
 
 #include <pebble.h>
+#include "../NotificationCenter.h"
 
 #define NOTIFICATION_SLOTS 10
-#define NOTIFICATION_MEMORY_STORAGE_SIZE 4000
+
+#ifdef PBL_LOW_MEMORY
+    #define NOTIFICATION_MEMORY_STORAGE_SIZE 4000
+#else
+    #define NOTIFICATION_MEMORY_STORAGE_SIZE 8000
+#endif
 
 #define SPECIAL_NOTIFICATION_BT_DISCONNECTED 0
 
@@ -34,6 +40,13 @@ typedef struct
     GColor8 notificationColor;
     uint16_t imageSize;
 #endif
+
+#ifndef PBL_LOW_MEMORY
+    uint8_t* notificationIconData;
+    GBitmap* notificationIcon;
+    uint16_t iconSize;
+#endif
+
     char* text;
 } Notification;
 
@@ -42,7 +55,7 @@ extern Notification* notificationData[NOTIFICATION_SLOTS];
 extern uint8_t numOfNotifications;
 
 Notification* find_notification(int32_t id);
-Notification* add_notification(uint16_t textSize);
+Notification* add_notification(uint16_t textSize, uint16_t iconSize);
 void remove_notification_from_storage(uint8_t id);
 void destroy_notification(Notification* notification);
 int8_t find_notification_index(int32_t id);
