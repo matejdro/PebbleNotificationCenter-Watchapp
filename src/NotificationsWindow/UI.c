@@ -38,6 +38,7 @@ static char clockText[9];
 
 static ScrollLayer* scroll;
 static Layer* textDisplayLayer;
+static Layer* textBackgroundLayer;
 
 TextParameters title;
 TextParameters subtitle;
@@ -363,7 +364,7 @@ void nw_ui_load(Window* window)
     text_layer_set_text_alignment(statusClock, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentRight));
     layer_add_child(statusbar, (Layer*) statusClock);
 
-    Layer* textBackgroundLayer = layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
+    textBackgroundLayer = layer_create(GRect(0, statusbarSize, windowBounds.size.w, windowBounds.size.h - statusbarSize));
     layer_set_update_proc(textBackgroundLayer, background_layer_paint);
     layer_add_child(topLayer, textBackgroundLayer);
 
@@ -410,6 +411,7 @@ void nw_ui_unload()
     layer_destroy(statusbar);
     layer_destroy(circlesLayer);
     layer_destroy(textDisplayLayer);
+    layer_destroy(textBackgroundLayer);
     text_layer_destroy(statusClock);
     scroll_layer_destroy(scroll);
     gbitmap_destroy(busyIndicator);
@@ -420,5 +422,6 @@ void nw_ui_unload()
 
     #ifdef PBL_COLOR
         bitmap_layer_destroy(notificationBitmapLayer);
+        layer_destroy(bitmapShadingLayer);
     #endif
 }

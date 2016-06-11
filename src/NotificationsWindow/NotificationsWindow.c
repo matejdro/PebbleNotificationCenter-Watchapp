@@ -307,6 +307,7 @@ static void window_unload(Window *window)
     numOfNotifications = 0;
 
     nw_ui_unload();
+    actions_menu_deinit();
 
     #ifdef PBL_COLOR
         if (bitmapReceivingBuffer != NULL)
