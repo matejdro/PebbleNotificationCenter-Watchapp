@@ -18,19 +18,17 @@ static Notification* create_notification(uint16_t textLength, uint16_t iconSize)
 
     notification->text = malloc(sizeof(char) * textLength);
 
-    #ifndef PBL_LOW_MEMORY
-        if (iconSize > 0)
-        {
-            notification->notificationIconData = malloc(iconSize);
-            notification->iconSize = iconSize;
+    if (iconSize > 0)
+    {
+        notification->notificationIconData = malloc(iconSize);
+        notification->iconSize = iconSize;
 
-            freeNotificationMemory -= iconSize;
-        }
-        else
-            notification->notificationIconData = NULL;
+        freeNotificationMemory -= iconSize;
+    }
+    else
+        notification->notificationIconData = NULL;
 
-        notification->notificationIcon = NULL;
-    #endif
+    notification->notificationIcon = NULL;
 
     freeNotificationMemory -= sizeof(Notification) + sizeof(char) * textLength;
 
@@ -43,13 +41,10 @@ void destroy_notification(Notification* notification)
         return;
 
     freeNotificationMemory += sizeof(Notification) + sizeof(char) * (notification->totalTextLength + 1);
+    freeNotificationMemory += notification->iconSize;
 
-    #ifndef PBL_LOW_MEMORY
-        freeNotificationMemory += notification->iconSize;
-
-        gbitmap_destroy(notification->notificationIcon);
-        free(notification->notificationIconData);
-    #endif
+    gbitmap_destroy(notification->notificationIcon);
+    free(notification->notificationIconData);
 
     free(notification->text);
     free(notification);
