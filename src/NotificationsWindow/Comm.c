@@ -4,7 +4,6 @@
 
 #include <pebble.h>
 #include "Comm.h"
-#include "pebble.h"
 #include "ActionsMenu.h"
 #include "NotificationsWindow.h"
 #include "../NotificationCenter.h"
@@ -149,20 +148,6 @@ static void received_message_new_notification(DictionaryIterator *received)
         }
     }
 
-    #ifndef PBL_LOW_MEMORY
-        if (notification->notificationIcon != NULL)
-            gbitmap_destroy(notification->notificationIcon);
-
-        if (notification->notificationIconData != NULL)
-        {
-            memcpy(notification->notificationIconData, dict_find(received, 6)->value->data, notification->iconSize);
-            notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
-        }
-        else
-            notification->notificationIcon = NULL;
-    #endif
-
-
     notification->id = id;
     notification->inList = inList;
     notification->scrollToEnd = (flags & 0x08) != 0;
@@ -296,7 +281,26 @@ static void received_message_image(DictionaryIterator* received)
 }
 #endif
 
+#ifndef PBL_LOW_MEMORY
+    void received_message_icon(DictionaryIterator* received)
+    {
+        Notification* notification = nw_get_displayed_notification();
+        if (notification == NULL)
+            return;
 
+        if (notification->notificationIcon != NULL)
+            gbitmap_destroy(notification->notificationIcon);
+
+        if (notification->notificationIconData != NULL)
+        {
+            memcpy(notification->notificationIconData, dict_find(received, 2)->value->data, notification->iconSize);
+            notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
+        }
+        else
+            notification->notificationIcon = NULL;
+
+    }
+#endif
 
 void nw_received_data_callback(uint8_t module, uint8_t id, DictionaryIterator* received)
 {
@@ -310,6 +314,10 @@ void nw_received_data_callback(uint8_t module, uint8_t id, DictionaryIterator* r
             received_message_new_notification(received);
         else if (id == 1)
             received_message_more_text(received);
+        #ifndef PBL_LOW_MEMORY
+            else if (id == 2)
+                received_message_icon(received);
+        #endif
     }
     else if (module == 3 && id == 0)
     {
