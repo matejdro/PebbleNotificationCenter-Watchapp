@@ -46,6 +46,11 @@ static void allocateData(void) {
 		*notificationsBuffer[i].title = 0;
 		*notificationsBuffer[i].subtitle = 0;
 		*notificationsBuffer[i].date = 0;
+
+		#ifndef PBL_LOW_MEMORY
+			notificationsBuffer[i].iconData = NULL;
+			notificationsBuffer[i].icon = NULL;
+		#endif
 	}
 }
 
