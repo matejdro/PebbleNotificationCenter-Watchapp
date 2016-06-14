@@ -5,6 +5,7 @@
 #include "BackgroundLighterLayer.h"
 #include <pebble.h>
 #include "../NotificationCenter.h"
+#include "../util.h"
 
 int getLuminance(GColor color)
 {
@@ -46,29 +47,17 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
 
             if (config_whiteText)
             {
-                //Decrease luminance of the pixel until it is dark enough to not make text in front unreadable
-                while (getLuminance(curPixel) > MAX_LUMINANCE * 2 / 5)
-                {
-                    if (curPixel.r > 0)
-                        curPixel.r--;
-                    if (curPixel.g > 0)
-                        curPixel.g--;
-                    if (curPixel.b > 0)
-                        curPixel.b--;
-                }
+                curPixel.r = max(0, curPixel.r - 2);
+                curPixel.g = max(0, curPixel.g - 3);
+                curPixel.b = max(0, curPixel.b - 1);
+
             }
             else
             {
-                //Increase luminance of the pixel until it is bright enough to not make text in front unreadable
-                while (getLuminance(curPixel) < MAX_LUMINANCE * 2 / 5)
-                {
-                    if (curPixel.r < 3)
-                        curPixel.r++;
-                    if (curPixel.g < 3)
-                        curPixel.g++;
-                    if (curPixel.b < 3)
-                        curPixel.b++;
-                }
+                curPixel.r = min(3, curPixel.r + 2);
+                curPixel.g = min(3, curPixel.g + 3);
+                curPixel.b = min(3, curPixel.b + 1);
+
             }
 
             rowPixelData[x] = curPixel.argb;
