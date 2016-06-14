@@ -16,6 +16,12 @@ typedef struct
 	char* subtitle;
 	uint8_t type;
 	char* date;
+
+	#ifndef PBL_LOW_MEMORY
+		uint16_t iconSize;
+		uint8_t* iconData;
+		GBitmap* icon;
+    #endif
 } NotificationListEntry;
 
 static CircularBuffer* notifications;
@@ -50,6 +56,12 @@ static void freeData(void) {
 		free(notificationsBuffer[i].title);
 		free(notificationsBuffer[i].subtitle);
 		free(notificationsBuffer[i].date);
+
+		#ifndef PBL_LOW_MEMORY
+			free(notificationsBuffer[i].iconData);
+			if (notificationsBuffer[i].icon != NULL)
+				gbitmap_destroy(notificationsBuffer[i].icon);
+        #endif
 	}
 
 	cb_destroy(notifications);
@@ -145,15 +157,24 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 			GRect(33 + xOffset, 39, bounds.size.w - 35 - xOffset, 18), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
 
-	GBitmap* image;
-	switch (listEntry->type) {
-	case 1:
-		image = ongoingNotification;
-		break;
-	default:
-		image = normalNotification;
-		break;
+	GBitmap* image = NULL;
+
+	#ifndef PBL_LOW_MEMORY
+    	image = listEntry->icon;
+	#endif
+
+	if (image == NULL)
+	{
+		switch (listEntry->type) {
+			case 1:
+				image = ongoingNotification;
+				break;
+			default:
+				image = normalNotification;
+				break;
+		}
 	}
+
 
 	graphics_draw_bitmap_in_rect(ctx, image, GRect(xOffset, 14, 31, 31));
 }
@@ -175,6 +196,26 @@ static void receivedEntries(DictionaryIterator* data) {
 	strcpy(listEntry->title, dict_find(data, 5)->value->cstring);
 	strcpy(listEntry->subtitle, dict_find(data, 6)->value->cstring);
 	strcpy(listEntry->date, dict_find(data, 7)->value->cstring);
+
+	#ifndef PBL_LOW_MEMORY
+		free(listEntry->iconData);
+		listEntry->iconData = NULL;
+
+		if (listEntry->icon != NULL)
+		{
+			gbitmap_destroy(listEntry->icon);
+			listEntry->icon = NULL;
+		}
+
+		listEntry->iconSize = dict_find(data, 8)->value->uint16;
+		if (listEntry->iconSize != 0)
+		{
+			listEntry->iconData = malloc(listEntry->iconSize);
+			memcpy(listEntry->iconData, dict_find(data, 9)->value->data, listEntry->iconSize);
+			listEntry->icon = gbitmap_create_from_png_data(listEntry->iconData, listEntry->iconSize);
+		}
+	#endif
+
 
 	menu_layer_reload_data(menuLayer);
 
