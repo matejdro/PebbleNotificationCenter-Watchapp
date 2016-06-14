@@ -1,22 +1,24 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
+#include "CircularBuffer.h"
 
 #define LIST_STORAGE_SIZE 6
 
 static Window* window;
 
 static uint16_t numEntries = 0;
-
-static int8_t arrayCenterPos = 0;
-static int16_t centerIndex = 0;
-
 static int16_t pickedEntry = -1;
 
-static char** titles;
-static char** subtitles;
-static uint8_t* types;
-static char** dates;
+typedef struct
+{
+	char* title;
+	char* subtitle;
+	uint8_t type;
+	char* date;
+} NotificationListEntry;
+
+static CircularBuffer* notifications;
 
 static MenuLayer* menuLayer;
 
@@ -25,177 +27,32 @@ static StatusBarLayer* statusBar;
 static GBitmap* normalNotification;
 static GBitmap* ongoingNotification;
 
-static int8_t convertToArrayPos(uint16_t index) {
-	int16_t indexDiff = index - centerIndex;
-	if (indexDiff > LIST_STORAGE_SIZE / 2 || indexDiff < -LIST_STORAGE_SIZE / 2)
-		return -1;
-
-	int8_t arrayPos = arrayCenterPos + indexDiff;
-	if (arrayPos < 0)
-		arrayPos += LIST_STORAGE_SIZE;
-	if (arrayPos > LIST_STORAGE_SIZE - 1)
-		arrayPos -= LIST_STORAGE_SIZE;
-
-	return arrayPos;
-}
-
-static char* getTitle(uint16_t index) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return "";
-
-	return titles[arrayPos];
-}
-
-static void setTitle(uint16_t index, char *name) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return;
-
-	strcpy(titles[arrayPos], name);
-}
-
-static char* getSubtitle(uint16_t index) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return "";
-
-	return subtitles[arrayPos];
-}
-
-static void setSubtitle(uint16_t index, char *name) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return;
-
-	strcpy(subtitles[arrayPos], name);
-}
-
-static uint8_t getType(uint16_t index) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return 0;
-
-	return types[arrayPos];
-}
-
-static void setType(uint16_t index, uint8_t type) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return;
-
-	types[arrayPos] = type;
-}
-
-static char* getDate(uint16_t index) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return "";
-
-	return dates[arrayPos];
-}
-
-static void setDate(uint16_t index, char *name) {
-	int8_t arrayPos = convertToArrayPos(index);
-	if (arrayPos < 0)
-		return;
-
-	strcpy(dates[arrayPos], name);
-}
-
-static void shiftArray(int newIndex) {
-	int8_t clearIndex;
-
-	int16_t diff = newIndex - centerIndex;
-	if (diff == 0)
-		return;
-
-	centerIndex += diff;
-	arrayCenterPos += diff;
-
-	if (diff > 0) {
-		if (arrayCenterPos > LIST_STORAGE_SIZE - 1)
-			arrayCenterPos -= LIST_STORAGE_SIZE;
-
-		clearIndex = arrayCenterPos - LIST_STORAGE_SIZE / 2;
-		if (clearIndex < 0)
-			clearIndex += LIST_STORAGE_SIZE;
-	} else {
-		if (arrayCenterPos < 0)
-			arrayCenterPos += LIST_STORAGE_SIZE;
-
-		clearIndex = arrayCenterPos + LIST_STORAGE_SIZE / 2;
-		if (clearIndex > LIST_STORAGE_SIZE - 1)
-			clearIndex -= LIST_STORAGE_SIZE;
-	}
-
-	*titles[clearIndex] = 0;
-	*subtitles[clearIndex] = 0;
-	types[clearIndex] = 0;
-	*dates[clearIndex] = 0;
-
-}
-
-static uint8_t getEmptySpacesDown() {
-	uint8_t spaces = 0;
-	for (int i = centerIndex; i <= centerIndex + LIST_STORAGE_SIZE / 2; i++) {
-		if (i >= numEntries)
-			return LIST_STORAGE_SIZE;
-
-		if (*getTitle(i) == 0) {
-			break;
-		}
-
-		spaces++;
-	}
-
-	return spaces;
-}
-
-static uint8_t getEmptySpacesUp() {
-	uint8_t spaces = 0;
-	for (int i = centerIndex; i >= centerIndex - LIST_STORAGE_SIZE / 2; i--) {
-		if (i < 0)
-			return LIST_STORAGE_SIZE;
-
-		if (*getTitle(i) == 0) {
-			break;
-		}
-
-		spaces++;
-	}
-
-	return spaces;
-}
-
 static void allocateData(void) {
-	titles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
-	subtitles = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
-	dates = malloc(sizeof(int*) * LIST_STORAGE_SIZE);
-	types = malloc(sizeof(uint8_t) * LIST_STORAGE_SIZE);
+	notifications = cb_create(sizeof(NotificationListEntry), LIST_STORAGE_SIZE);
+
+	NotificationListEntry* notificationsBuffer = (NotificationListEntry*) notifications->data;
 
 	for (int i = 0; i < LIST_STORAGE_SIZE; i++) {
-		titles[i] = malloc(sizeof(char) * 21);
-		subtitles[i] = malloc(sizeof(char) * 21);
-		dates[i] = malloc(sizeof(char) * 21);
+		notificationsBuffer[i].title = malloc(sizeof(char) * 21);
+		notificationsBuffer[i].subtitle = malloc(sizeof(char) * 21);
+		notificationsBuffer[i].date = malloc(sizeof(char) * 21);
 
-		*titles[i] = 0;
-		*subtitles[i] = 0;
-		*dates[i] = 0;
+		*notificationsBuffer[i].title = 0;
+		*notificationsBuffer[i].subtitle = 0;
+		*notificationsBuffer[i].date = 0;
 	}
 }
 
 static void freeData(void) {
+	NotificationListEntry* notificationsBuffer = (NotificationListEntry*) notifications->data;
+
 	for (int i = 0; i < LIST_STORAGE_SIZE; i++) {
-		free(titles[i]);
-		free(subtitles[i]);
-		free(dates[i]);
+		free(notificationsBuffer[i].title);
+		free(notificationsBuffer[i].subtitle);
+		free(notificationsBuffer[i].date);
 	}
 
-	free(titles);
-	free(subtitles);
-	free(dates);
-	free(types);
+	cb_destroy(notifications);
 }
 
 static void requestNotification(uint16_t pos) {
@@ -226,14 +83,14 @@ static void sendpickedEntry(int16_t pos) {
 }
 
 static void requestAdditionalEntries(void) {
-	int emptyDown = getEmptySpacesDown();
-	int emptyUp = getEmptySpacesUp();
+	uint8_t filledDown = cb_getNumOfLoadedSpacesDownFromCenter(notifications, numEntries);
+	uint8_t filledUp = cb_getNumOfLoadedSpacesUpFromCenter(notifications);
 
-	if (emptyDown < LIST_STORAGE_SIZE / 2 && emptyDown <= emptyUp) {
-		uint8_t startingIndex = centerIndex + emptyDown;
+	if (filledDown < LIST_STORAGE_SIZE / 2 && filledDown <= filledUp) {
+		uint16_t startingIndex = notifications->centerIndex + filledDown;
 		requestNotification(startingIndex);
-	} else if (emptyUp < LIST_STORAGE_SIZE / 2) {
-		uint8_t startingIndex = centerIndex - emptyUp;
+	} else if (filledUp < LIST_STORAGE_SIZE / 2) {
+		uint16_t startingIndex = notifications->centerIndex - filledUp;
 		requestNotification(startingIndex);
 	}
 }
@@ -258,7 +115,7 @@ static int16_t menu_get_separator_height_callback(struct MenuLayer *menu_layer, 
 
 static void menu_pos_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 		MenuIndex old_index, void *callback_context) {
-	shiftArray(new_index.row);
+	cb_shift(notifications, new_index.row);
 	requestAdditionalEntries();
 }
 
@@ -271,21 +128,25 @@ static void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer,
 
 	uint8_t xOffset = PBL_IF_ROUND_ELSE(20, 1);
 
-	graphics_draw_text(ctx, getTitle(cell_index->row),
+	NotificationListEntry* listEntry = cb_getEntry(notifications, cell_index->row);
+	if (listEntry == NULL)
+		return;
+
+	graphics_draw_text(ctx, listEntry->title,
 			fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
 			GRect(33 + xOffset, 0, bounds.size.w - 35 - xOffset, 21), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getSubtitle(cell_index->row),
+	graphics_draw_text(ctx, listEntry->subtitle,
 			fonts_get_system_font(FONT_KEY_GOTHIC_14),
 			GRect(33 + xOffset, 21, bounds.size.w - 35 - xOffset, 17), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
-	graphics_draw_text(ctx, getDate(cell_index->row),
+	graphics_draw_text(ctx, listEntry->date,
 			fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
 			GRect(33 + xOffset, 39, bounds.size.w - 35 - xOffset, 18), GTextOverflowModeTrailingEllipsis,
 			GTextAlignmentLeft, NULL);
 
 	GBitmap* image;
-	switch (getType(cell_index->row)) {
+	switch (listEntry->type) {
 	case 1:
 		image = ongoingNotification;
 		break;
@@ -306,15 +167,18 @@ static void receivedEntries(DictionaryIterator* data) {
 	uint16_t offset = dict_find(data, 2)->value->uint16;
 	numEntries = dict_find(data, 3)->value->uint16;
 
-	setType(offset, dict_find(data, 4)->value->uint8);
-	setTitle(offset, dict_find(data, 5)->value->cstring);
-	setSubtitle(offset, dict_find(data, 6)->value->cstring);
-	setDate(offset, dict_find(data, 7)->value->cstring);
+	NotificationListEntry* listEntry = cb_getEntryForFilling(notifications, offset);
+	if (listEntry == NULL)
+		return;
+
+	listEntry->type = dict_find(data, 4)->value->uint8;
+	strcpy(listEntry->title, dict_find(data, 5)->value->cstring);
+	strcpy(listEntry->subtitle, dict_find(data, 6)->value->cstring);
+	strcpy(listEntry->date, dict_find(data, 7)->value->cstring);
 
 	menu_layer_reload_data(menuLayer);
 
-
-		requestAdditionalEntries();
+	requestAdditionalEntries();
 }
 
 void list_window_data_sent(void) {
@@ -367,7 +231,7 @@ static void window_appear(Window* me) {
 	pickedEntry = -1;
 
 	allocateData();
-	menu_layer_set_selected_index(menuLayer, MenuIndex(0, centerIndex), MenuRowAlignCenter, false);
+	menu_layer_set_selected_index(menuLayer, MenuIndex(0, notifications->centerIndex), MenuRowAlignCenter, false);
 
 	requestAdditionalEntries();
 }
@@ -384,8 +248,6 @@ static void window_disappear(Window* me) {
 }
 
 static void window_load(Window *me) {
-	arrayCenterPos = 0;
-	centerIndex = 0;
 	numEntries = 0;
 }
 
