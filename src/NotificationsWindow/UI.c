@@ -115,6 +115,8 @@ void nw_ui_refresh_notification(void)
     subtitle.text = subtitleText;
     body.text = bodyText;
 
+    textAreaFrame.size.w -= 4; //There is 4 pixel wide margin on the right side
+
     title.bounds.origin = GPoint(2, additionalYOffset);
     calculateTextSize(&title, (GRect) {.origin = textAreaFrame.origin, .size = GSize(titleMaximumWidth, textAreaFrame.size.h)});
     if (title.bounds.size.h < titleMinimumHeight)
