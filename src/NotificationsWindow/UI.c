@@ -67,6 +67,8 @@ void nw_ui_refresh_notification(void)
     unsigned short additionalYOffset = 0;
 
     GRect textAreaFrame = layer_get_frame(scroll_layer_get_layer(scroll));
+    textAreaFrame.size.w -= 4; //There is 4 pixel wide margin on the right side
+
     uint16_t titleMaximumWidth = textAreaFrame.size.w;
     uint16_t titleMinimumHeight = 0;
 
@@ -114,8 +116,6 @@ void nw_ui_refresh_notification(void)
     title.text = titleText;
     subtitle.text = subtitleText;
     body.text = bodyText;
-
-    textAreaFrame.size.w -= 4; //There is 4 pixel wide margin on the right side
 
     title.bounds.origin = GPoint(2, additionalYOffset);
     calculateTextSize(&title, (GRect) {.origin = textAreaFrame.origin, .size = GSize(titleMaximumWidth, textAreaFrame.size.h)});
