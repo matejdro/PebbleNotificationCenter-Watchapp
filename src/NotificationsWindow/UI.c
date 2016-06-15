@@ -136,8 +136,8 @@ void nw_ui_refresh_notification(void)
         verticalSize += windowHeight / 2;
 
 
-    layer_set_frame(textDisplayLayer, GRect(0, 0, textAreaFrame.size.w - 4, verticalSize));
-    scroll_layer_set_content_size(scroll, GSize(textAreaFrame.size.w - 4, verticalSize));
+    layer_set_frame(textDisplayLayer, GRect(0, 0, textAreaFrame.size.w, verticalSize));
+    scroll_layer_set_content_size(scroll, GSize(textAreaFrame.size.w, verticalSize));
     layer_mark_dirty(textDisplayLayer);
 
     nw_ui_refresh_picked_indicator();
