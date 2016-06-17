@@ -10,6 +10,7 @@
 #include "UI.h"
 #include "Buttons.h"
 #include "Comm.h"
+#include "Gestures.h"
 
 uint32_t elapsedTime = 0;
 bool appIdle = true;
@@ -199,10 +200,16 @@ static void bt_handler(bool connected)
     }
 }
 
-static void accelerometer_shake(AccelAxisType axis, int32_t direction)
+void accelerometer_shake(AccelAxisType axis, int32_t direction)
 {
     if (vibrating) //Vibration seems to generate a lot of false positives
         return;
+
+    if (actions_menu_is_displayed())
+    {
+        nw_send_action_menu_result(actions_menu_get_selected_index());
+        return;
+    }
 
     Notification* notification = nw_get_displayed_notification();
     if (notification == NULL)
@@ -287,7 +294,6 @@ static void window_load(Window *window)
     actions_menu_init();
     actions_menu_attach(window_get_root_layer(window));
 
-    accel_tap_service_subscribe(accelerometer_shake);
     tick_timer_service_subscribe(SECOND_UNIT, (TickHandler) second_tick);
     if (config_disconnectedNotification)
         bluetooth_connection_service_subscribe(bt_handler);
@@ -300,6 +306,11 @@ static void window_load(Window *window)
     }
 
     nw_ui_refresh_notification();
+
+    if (config_gestures)
+        nw_gestures_init();
+    else
+        accel_tap_service_subscribe(accelerometer_shake);
 }
 
 static void window_unload(Window *window)
@@ -331,6 +342,7 @@ static void window_unload(Window *window)
     accel_tap_service_unsubscribe();
     bluetooth_connection_service_unsubscribe();
     tick_timer_service_unsubscribe();
+    nw_gestures_deinit();
 
     window_destroy(window);
 

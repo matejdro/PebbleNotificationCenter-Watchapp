@@ -27,6 +27,7 @@ bool config_disableVibration;
 bool config_displayScrollShadow;
 bool config_scrollByPage;
 bool config_disconnectedNotification;
+bool config_gestures;
 bool main_noMenu;
 
 
@@ -124,6 +125,7 @@ static void received_config(DictionaryIterator *received)
 	config_displayScrollShadow = (data[13] & 0x01) != 0;
 	config_scrollByPage = PBL_IF_ROUND_ELSE(true, (data[13] & 0x02) != 0);
 	config_disconnectedNotification = (data[13] & 0x04) != 0;
+	config_gestures = (data[13] & 0x08) != 0;
 
 	config_periodicTimeout  = (data[11] << 8) | (data[12]);
 	config_lightTimeout = data[5];

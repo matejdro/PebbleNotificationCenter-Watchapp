@@ -8,5 +8,8 @@
 #include "pebble.h"
 
 void nw_buttonconfig(void* context);
+void nw_simulate_button_down();
+void nw_simulate_button_up();
+
 
 #endif //NOTIFICATIONCENTER_BUTTONS_H

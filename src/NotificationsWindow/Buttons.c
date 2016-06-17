@@ -151,6 +151,7 @@ static void button_up_click_proxy(ClickRecognizerRef recognizer, void* context)
         }
     }
 }
+
 static void button_down_click_proxy(ClickRecognizerRef recognizer, void* context)
 {
     if (downPressed)
@@ -242,4 +243,24 @@ void nw_buttonconfig(void* context) {
 
     window_single_repeating_click_subscribe(BUTTON_ID_UP, 50, (ClickHandler) button_up_click_proxy);
     window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 50, (ClickHandler) button_down_click_proxy);
+}
+
+void nw_simulate_button_down()
+{
+    downPressed = true;
+    skippedDownPresses = 1;
+    button_down_click_proxy(NULL, NULL);
+    downPressed = false;
+
+    light_enable_interaction();
+}
+
+void nw_simulate_button_up()
+{
+    upPressed = true;
+    skippedUpPresses = 1;
+    button_up_click_proxy(NULL, NULL);
+    upPressed = false;
+
+    light_enable_interaction();
 }

@@ -18,6 +18,7 @@ void nw_vibrate(VibePattern* vibePattern, uint16_t totalLength);
 bool nw_remove_notification_with_id(int32_t id, bool closeAutomatically);
 void nw_remove_notification(uint8_t index, bool closeAutomatically);
 void nw_fix_picked_notification();
+void accelerometer_shake(AccelAxisType axis, int32_t direction);
 
 #ifdef PBL_MICROPHONE
 void nw_start_dictation();
