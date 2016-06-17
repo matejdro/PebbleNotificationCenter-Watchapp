@@ -156,7 +156,7 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
     graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
 
     Notification* curNotification = nw_get_displayed_notification();
-    if (curNotification->notificationIcon != NULL)
+    if (curNotification != NULL && curNotification->notificationIcon != NULL)
     {
         graphics_context_set_compositing_mode(ctx, GCompOpSet);
         graphics_draw_bitmap_in_rect(ctx, curNotification->notificationIcon, (GRect) {.origin = iconPosition, .size = GSize(NOTIFICATION_ICON_SIZE, NOTIFICATION_ICON_SIZE)});
@@ -180,6 +180,11 @@ void nw_ui_refresh_picked_indicator(void)
 
 void nw_ui_set_busy_indicator(bool value)
 {
+    // Sometimes this call may come through while window is closing,
+    // causing crash because statusbar is not there anymore
+    if (statusbar == NULL)
+        return;
+
     busy = value;
     layer_mark_dirty(statusbar);
 }
@@ -411,6 +416,7 @@ void nw_ui_load(Window* window)
 void nw_ui_unload()
 {
     layer_destroy(statusbar);
+    statusbar = NULL;
     layer_destroy(circlesLayer);
     layer_destroy(textDisplayLayer);
     layer_destroy(textBackgroundLayer);
