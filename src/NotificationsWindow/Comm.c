@@ -93,9 +93,11 @@ static void received_message_new_notification(DictionaryIterator *received)
 
     uint16_t textSize = configBytes[4] << 8 | configBytes[5];
     uint16_t iconSize = 0;
-    Tuple* iconSizeTuple = dict_find(received, 5);
-    if (iconSizeTuple != NULL)
-        iconSize = iconSizeTuple->value->uint16;
+    #ifndef PBL_LOW_MEMORY
+        Tuple* iconSizeTuple = dict_find(received, 5);
+        if (iconSizeTuple != NULL)
+            iconSize = iconSizeTuple->value->uint16;
+    #endif
 
     uint8_t numOfVibrationBytes = configBytes[17];
 
@@ -279,24 +281,26 @@ static void received_message_image(DictionaryIterator* received)
 }
 #endif
 
-void received_message_icon(DictionaryIterator* received)
-{
-    Notification* notification = nw_get_displayed_notification();
-    if (notification == NULL)
-        return;
-
-    if (notification->notificationIcon != NULL)
-        gbitmap_destroy(notification->notificationIcon);
-
-    if (notification->notificationIconData != NULL)
+#ifndef PBL_LOW_MEMORY
+    void received_message_icon(DictionaryIterator* received)
     {
-        memcpy(notification->notificationIconData, dict_find(received, 2)->value->data, notification->iconSize);
-        notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
-    }
-    else
-        notification->notificationIcon = NULL;
+        Notification* notification = nw_get_displayed_notification();
+        if (notification == NULL)
+            return;
 
-}
+        if (notification->notificationIcon != NULL)
+            gbitmap_destroy(notification->notificationIcon);
+
+        if (notification->notificationIconData != NULL)
+        {
+            memcpy(notification->notificationIconData, dict_find(received, 2)->value->data, notification->iconSize);
+            notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
+        }
+        else
+            notification->notificationIcon = NULL;
+
+    }
+#endif
 
 void nw_received_data_callback(uint8_t module, uint8_t id, DictionaryIterator* received)
 {
@@ -310,8 +314,10 @@ void nw_received_data_callback(uint8_t module, uint8_t id, DictionaryIterator* r
             received_message_new_notification(received);
         else if (id == 1)
             received_message_more_text(received);
-        else if (id == 2)
-            received_message_icon(received);
+        #ifndef PBL_LOW_MEMORY
+            else if (id == 2)
+                received_message_icon(received);
+        #endif
     }
     else if (module == 3 && id == 0)
     {

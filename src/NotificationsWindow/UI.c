@@ -43,7 +43,9 @@ static Layer* textBackgroundLayer;
 TextParameters title;
 TextParameters subtitle;
 TextParameters body;
+#ifndef PBL_LOW_MEMORY
 GPoint iconPosition;
+#endif
 
 static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
 {
@@ -101,6 +103,7 @@ void nw_ui_refresh_notification(void)
                 additionalYOffset = windowHeight;
         #endif
 
+    #ifndef PBL_LOW_MEMORY
         if (notification->notificationIcon != NULL)
         {
             const uint8_t topMargin = 5;
@@ -109,6 +112,7 @@ void nw_ui_refresh_notification(void)
             titleMaximumWidth = iconPosition.x;
             titleMinimumHeight = NOTIFICATION_ICON_SIZE + topMargin;
         }
+    #endif
 
     }
 
@@ -155,12 +159,14 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
     graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
     graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
 
+    #ifndef PBL_LOW_MEMORY
     Notification* curNotification = nw_get_displayed_notification();
     if (curNotification != NULL && curNotification->notificationIcon != NULL)
     {
         graphics_context_set_compositing_mode(ctx, GCompOpSet);
         graphics_draw_bitmap_in_rect(ctx, curNotification->notificationIcon, (GRect) {.origin = iconPosition, .size = GSize(NOTIFICATION_ICON_SIZE, NOTIFICATION_ICON_SIZE)});
     }
+    #endif
 }
 
 static void background_layer_paint(Layer* layer, GContext* ctx)

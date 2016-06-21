@@ -41,9 +41,11 @@ typedef struct
     uint16_t imageSize;
 #endif
 
-uint8_t* notificationIconData;
-GBitmap* notificationIcon;
-uint16_t iconSize;
+#ifndef PBL_LOW_MEMORY
+    uint8_t* notificationIconData;
+    GBitmap* notificationIcon;
+    uint16_t iconSize;
+#endif
 
     char* text;
 } Notification;

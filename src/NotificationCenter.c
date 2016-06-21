@@ -230,8 +230,8 @@ int main(void) {
 		appmessage_max_size = 4096; //Limit inbox size to conserve RAM.
 
 	#ifdef PBL_PLATFORM_APLITE
-		//Aplite has very little memory, so we must have very conservative appmessage buffer.
-		appmessage_max_size = 250;
+		//Aplite has so little memory, we can't squeeze much more than that out of appmessage buffer.
+		appmessage_max_size = 124;
 	#endif
 
 	app_message_register_inbox_received(received_data);
