@@ -150,6 +150,12 @@ void nw_ui_refresh_notification(void)
 static void text_display_layer_paint(Layer* layer, GContext* ctx)
 {
 
+    int16_t layerWidth = layer_get_bounds(layer).size.w;
+    graphics_context_set_fill_color(ctx, GColorCyan);
+    graphics_fill_rect(ctx, (GRect) { .origin = title.bounds.origin, .size = GSize(layerWidth, title.bounds.size.h) }, 0, GCornerNone);
+    graphics_context_set_fill_color(ctx, GColorMalachite);
+    graphics_fill_rect(ctx, subtitle.bounds, 0, GCornerNone);
+
     if (config_whiteText)
         graphics_context_set_text_color(ctx, GColorWhite);
     else
@@ -159,7 +165,9 @@ static void text_display_layer_paint(Layer* layer, GContext* ctx)
     graphics_draw_text(ctx, subtitle.text, subtitle.font, subtitle.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, subtitle.attributes);
     graphics_draw_text(ctx, body.text, body.font, body.bounds, GTextOverflowModeWordWrap, TEXT_ALIGNMENT, body.attributes);
 
-    #ifndef PBL_LOW_MEMORY
+
+
+#ifndef PBL_LOW_MEMORY
     Notification* curNotification = nw_get_displayed_notification();
     if (curNotification != NULL && curNotification->notificationIcon != NULL)
     {
