@@ -306,11 +306,9 @@ static void window_load(Window *window)
     }
 
     nw_ui_refresh_notification();
-#ifndef PBL_LOW_MEMORY
     if (config_gestures)
         nw_gestures_init();
     else
-#endif
         accel_tap_service_subscribe(accelerometer_shake);
 }
 
@@ -343,9 +341,7 @@ static void window_unload(Window *window)
     accel_tap_service_unsubscribe();
     bluetooth_connection_service_unsubscribe();
     tick_timer_service_unsubscribe();
-#ifndef PBL_LOW_MEMORY
     nw_gestures_deinit();
-#endif
     window_destroy(window);
 
     if (main_noMenu && config_dontClose)

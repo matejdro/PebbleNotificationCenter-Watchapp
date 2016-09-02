@@ -2,8 +2,6 @@
 // Created by Matej on 15. 06. 2016.
 //
 
-#ifndef PBL_LOW_MEMORY
-
 #include "Gestures.h"
 #include "pebble.h"
 #include "Buttons.h"
@@ -137,5 +135,3 @@ void nw_gestures_init() {
 void nw_gestures_deinit() {
     accel_data_service_unsubscribe();
 }
-
-#endif
