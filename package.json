@@ -11,7 +11,6 @@
     "resources": {
       "media": [
         {
-          "memoryFormat": "1Bit",
           "menuIcon": true,
           "type": "bitmap",
           "name": "ICON",
@@ -43,7 +42,7 @@
     "uuid": "0a7575eb-e5b9-456b-8701-3eacb62d74f1",
     "messageKeys": {},
     "enableMultiJS": false,
-    "displayName": "Notification Center Beta",
+    "displayName": "Notify Center",
     "watchapp": {
       "onlyShownOnCommunication": false,
       "hiddenApp": false,
