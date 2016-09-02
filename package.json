@@ -1,0 +1,60 @@
+{
+  "version": "2.81.0",
+  "author": "matejdro",
+  "private": true,
+  "dependencies": {},
+  "keywords": [
+    "pebble-app"
+  ],
+  "pebble": {
+    "sdkVersion": "3",
+    "resources": {
+      "media": [
+        {
+          "memoryFormat": "1Bit",
+          "menuIcon": true,
+          "type": "bitmap",
+          "name": "ICON",
+          "file": "icon.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "BUBBLE",
+          "file": "bubble.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "INDICATOR_BUSY",
+          "file": "busy.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "COGWHEEL",
+          "file": "cogwheel.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "RECENT",
+          "file": "recent.png"
+        }
+      ]
+    },
+    "projectType": "native",
+    "uuid": "0a7575eb-e5b9-456b-8701-3eacb62d74f1",
+    "messageKeys": {},
+    "enableMultiJS": false,
+    "displayName": "Notification Center Beta",
+    "watchapp": {
+      "onlyShownOnCommunication": false,
+      "hiddenApp": false,
+      "watchface": false
+    },
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk"
+    ],
+    "capabilities": []
+  },
+  "name": "Notifications"
+}
