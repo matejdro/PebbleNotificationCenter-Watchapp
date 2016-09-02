@@ -30,8 +30,6 @@ bool config_disconnectedNotification;
 bool config_gestures;
 bool main_noMenu;
 
-
-
 uint32_t appmessage_max_size;
 
 bool closingMode = false;
@@ -57,6 +55,8 @@ static const char* fonts[] = {
 		FONT_KEY_ROBOTO_BOLD_SUBSET_49,
 		FONT_KEY_DROID_SERIF_28_BOLD
 };
+
+static void send_initial_packet();
 
 const char* config_getFontResource(int id)
 {
@@ -97,8 +97,19 @@ void switchWindow(uint8_t newWindow)
 	}
 }
 
+static void loading_retry_timer(void* data)
+{
+	if (!loadingMode)
+		return;
+
+	send_initial_packet();
+	app_timer_register(3000, loading_retry_timer, NULL);
+}
+
 static void received_config(DictionaryIterator *received)
 {
+	loadingMode = false;
+
 	uint8_t* data = dict_find(received, 2)->value->data;
 
 	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
@@ -210,6 +221,7 @@ void closeApp(void)
 	closingMode = true;
 }
 
+
 static uint32_t getCapabilities(uint16_t maxInboxSize)
 {
 	uint32_t serializedCapabilities = 0;
@@ -222,6 +234,18 @@ static uint32_t getCapabilities(uint16_t maxInboxSize)
 	serializedCapabilities |= maxInboxSize << 16;
 
 	return serializedCapabilities;
+}
+
+static void send_initial_packet() {
+	DictionaryIterator *iterator;
+	app_message_outbox_begin(&iterator);
+	dict_write_uint8(iterator, 0, 0);
+	dict_write_uint8(iterator, 1, 0);
+	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
+	dict_write_uint32(iterator, 3, getCapabilities(appmessage_max_size));
+
+	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+	app_message_outbox_send();
 }
 
 int main(void) {
@@ -238,26 +262,14 @@ int main(void) {
 	app_message_register_outbox_sent(sent_data);
 	app_message_open(appmessage_max_size, 408);
 
-	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 0);
-	dict_write_uint8(iterator, 1, 0);
-	dict_write_uint16(iterator, 2, PROTOCOL_VERSION);
-
-	dict_write_uint32(iterator, 3, getCapabilities(appmessage_max_size));
-
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
-
 	loadingMode = true;
+	send_initial_packet();
+	app_timer_register(3000, loading_retry_timer, NULL);
 
 	switchWindow(0);
-
 	app_event_loop();
-
 	window_stack_pop_all(false);
 
 	free(config_periodicVibrationPattern);
-
 	return 0;
 }
