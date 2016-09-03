@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include <pebble_fonts.h>
+#include <pebble-activity-indicator-layer/activity-indicator-layer.h>
 #include "NotificationCenter.h"
 #include "NotificationsWindow/NotificationsWindow.h"
 
@@ -13,9 +14,15 @@ static GBitmap* currentIcon;
 static GBitmap* historyIcon;
 
 static TextLayer* loadingLayer;
-
 static TextLayer* quitTitle;
 static TextLayer* quitText;
+
+#ifndef PBL_LOW_MEMORY
+static const uint16_t ACTIVITY_INDICATOR_SIZE = 50;
+static const uint16_t ACTIVITY_INDICATOR_THICKNESS = 5;
+
+static ActivityIndicatorLayer *loadingIndicator;
+#endif
 
 static MenuLayer* menuLayer;
 
@@ -34,6 +41,14 @@ static void show_loading(void)
 	layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
 	layer_set_hidden((Layer *) menuLayer, true);
+
+    #ifndef PBL_LOW_MEMORY
+        activity_indicator_layer_set_animating(loadingIndicator, true);
+        layer_set_hidden(activity_indicator_layer_get_layer(loadingIndicator), false);
+        text_layer_set_text(loadingLayer, "Notification Center");
+    #else
+        text_layer_set_text(loadingLayer, "Loading...");
+    #endif
 }
 
 void show_old_watchapp(void)
@@ -59,6 +74,11 @@ static void show_update_dialog(void)
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
 	text_layer_set_font(loadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+
+#ifndef PBL_LOW_MEMORY
+    activity_indicator_layer_set_animating(loadingIndicator, false);
+    layer_set_hidden(activity_indicator_layer_get_layer(loadingIndicator), true);
+#endif
 }
 
 void show_menu(void)
@@ -255,11 +275,17 @@ static void window_appears(Window* window)
 
 	loadingLayer = text_layer_create(GRect(0, STATUSBAR_Y_OFFSET, windowWidth, windowHeight));
 	text_layer_set_text_alignment(loadingLayer, GTextAlignmentCenter);
-	text_layer_set_text(loadingLayer, "Loading...");
 	text_layer_set_font(loadingLayer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) loadingLayer);
 
-	quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, windowWidth, 50));
+    #ifndef PBL_LOW_MEMORY
+        loadingIndicator = activity_indicator_layer_create(GRect(windowWidth / 2 - ACTIVITY_INDICATOR_SIZE / 2, windowHeight / 2 - ACTIVITY_INDICATOR_SIZE / 2 + STATUSBAR_Y_OFFSET, ACTIVITY_INDICATOR_SIZE, ACTIVITY_INDICATOR_SIZE));
+        activity_indicator_layer_set_thickness(loadingIndicator, ACTIVITY_INDICATOR_THICKNESS);
+
+        layer_add_child(topLayer, (Layer *)loadingIndicator);
+    #endif
+
+    quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, windowWidth, 50));
 	text_layer_set_text_alignment(quitTitle, GTextAlignmentCenter);
 	text_layer_set_text(quitTitle, "Press back again if app does not close in several seconds");
 	layer_add_child(topLayer, (Layer*) quitTitle);
@@ -323,7 +349,11 @@ static void window_disappears(Window* me)
     menu_layer_destroy(menuLayer);
 	status_bar_layer_destroy(statusBar);
 
-	closingMode = false;
+    #ifndef PBL_LOW_MEMORY
+        activity_indicator_layer_destroy(loadingIndicator);
+    #endif
+
+    closingMode = false;
 }
 
 static void window_load(Window *me) {

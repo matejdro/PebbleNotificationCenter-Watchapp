@@ -2,7 +2,9 @@
   "version": "2.81.0",
   "author": "matejdro",
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "pebble-activity-indicator-layer": "1.0.0"
+  },
   "keywords": [
     "pebble-app"
   ],
