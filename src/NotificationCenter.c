@@ -102,6 +102,12 @@ static void loading_retry_timer(void* data)
 	if (!loadingMode)
 		return;
 
+    if (!connection_service_peek_pebble_app_connection())
+    {
+        show_disconnected_error();
+        return;
+    }
+
 	send_initial_packet();
 	app_timer_register(3000, loading_retry_timer, NULL);
 }
@@ -115,12 +121,12 @@ static void received_config(DictionaryIterator *received)
 	uint16_t supportedVersion = (data[8] << 8) | (data[9]);
 	if (supportedVersion > PROTOCOL_VERSION)
 	{
-		show_old_watchapp();
+        show_old_watchapp_error();
 		return;
 	}
 	else if (supportedVersion < PROTOCOL_VERSION)
 	{
-		show_old_android();
+        show_old_android_error();
 		return;
 	}
 

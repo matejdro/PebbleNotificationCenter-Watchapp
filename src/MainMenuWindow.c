@@ -32,7 +32,7 @@ static bool firstAppear = true;
 static bool menuLoaded = false;
 static bool historyCleared = false;
 
-static void show_update_dialog(void);
+static void show_error_base(void);
 static void update_settings();
 
 static void show_loading(void)
@@ -51,22 +51,28 @@ static void show_loading(void)
     #endif
 }
 
-void show_old_watchapp(void)
+void show_old_watchapp_error(void)
 {
-	show_update_dialog();
+    show_error_base();
 	text_layer_set_text(loadingLayer, "Notification Center\nOutdated Watchapp \n\n Check your phone");
 
 }
 
-void show_old_android(void)
+void show_old_android_error(void)
 {
-	show_update_dialog();
+    show_error_base();
 
 	text_layer_set_text(loadingLayer, "Notification Center\nUpdate Android App \n\n Open link:\n www.goo.gl/0e0h9m");
-
 }
 
-static void show_update_dialog(void)
+void show_disconnected_error(void)
+{
+    show_error_base();
+
+    text_layer_set_text(loadingLayer, "Notification Center\n\nPhone is not connected.");
+}
+
+static void show_error_base(void)
 {
 	layer_set_hidden((Layer *) loadingLayer, false);
 	layer_set_hidden((Layer *) quitTitle, true);
@@ -388,6 +394,9 @@ void main_menu_init(void)
 
 	window_stack_push(window, true /* Animated */);
 
-	show_loading();
+    if (connection_service_peek_pebble_app_connection())
+	    show_loading();
+    else
+        show_disconnected_error();
 }
 
