@@ -284,7 +284,9 @@ static void received_message_image(DictionaryIterator* received)
 #ifndef PBL_LOW_MEMORY
     void received_message_icon(DictionaryIterator* received)
     {
-        Notification* notification = nw_get_displayed_notification();
+        int32_t notificationId = dict_find(received, 2)->value->int32;
+
+        Notification* notification = find_notification(notificationId);
         if (notification == NULL)
             return;
 
@@ -293,7 +295,7 @@ static void received_message_image(DictionaryIterator* received)
 
         if (notification->notificationIconData != NULL)
         {
-            memcpy(notification->notificationIconData, dict_find(received, 2)->value->data, notification->iconSize);
+            memcpy(notification->notificationIconData, dict_find(received, 3)->value->data, notification->iconSize);
             notification->notificationIcon = gbitmap_create_from_png_data(notification->notificationIconData, notification->iconSize);
         }
         else
