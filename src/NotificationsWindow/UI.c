@@ -131,14 +131,10 @@ void nw_ui_refresh_notification(void)
     body.bounds.origin = GPoint(2, subtitle.bounds.size.h + 1 + subtitle.bounds.origin.y);
     calculateTextSize(&body, textAreaFrame);
 
-    short verticalSize = body.bounds.size.h + body.bounds.origin.y + 5 + additionalYOffset;
+    short verticalSize = body.bounds.size.h + body.bounds.origin.y + 5;
 
     if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
         verticalSize = windowHeight * 2;
-
-    if (config_scrollByPage)
-        verticalSize += windowHeight / 2;
-
 
     layer_set_frame(textDisplayLayer, GRect(0, 0, textAreaFrame.size.w, verticalSize));
     scroll_layer_set_content_size(scroll, GSize(textAreaFrame.size.w, verticalSize));
@@ -203,11 +199,11 @@ void nw_ui_scroll_to_notification_start(void)
     Notification* notification = nw_get_displayed_notification();
     if (notification != NULL)
     {
-        if (notification->scrollToEnd)
-            scrollTo = -scroll_layer_get_content_size(scroll).h;
+       if (notification->scrollToEnd)
+           scrollTo = -scroll_layer_get_content_size(scroll).h + windowHeight;
 
 #ifdef PBL_COLOR
-        if (notification->imageSize > 0)
+        else if (notification->imageSize > 0)
             scrollTo -= windowHeight;
 #endif
     }
@@ -225,16 +221,17 @@ void nw_ui_scroll_notification(bool down)
 
     GSize size = scroll_layer_get_content_size(scroll);
 
-    int16_t pageNumber = yScrollOffset / scrollBy;
+    int16_t pageNumber = (yScrollOffset - scrollBy + 1) / scrollBy;
     if (down)
         pageNumber--;
     else
         pageNumber++;
 
     yScrollOffset = pageNumber * scrollBy;
+    int16_t maxScroll = -size.h + windowHeight;
 
-    if (yScrollOffset < -size.h)
-        yScrollOffset = -size.h;
+    if (yScrollOffset < maxScroll)
+        yScrollOffset = maxScroll;
     else if (yScrollOffset > 0)
         yScrollOffset = 0;
 
