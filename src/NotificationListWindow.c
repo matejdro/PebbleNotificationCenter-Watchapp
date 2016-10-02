@@ -9,6 +9,7 @@ static Window* window;
 
 static uint16_t numEntries = 0;
 static int16_t pickedEntry = -1;
+static bool firstListRequest = true;
 
 typedef struct
 {
@@ -78,6 +79,9 @@ static void requestNotification(uint16_t pos) {
 	dict_write_uint8(iterator, 0, 2);
 	dict_write_uint8(iterator, 1, 0);
 	dict_write_uint16(iterator, 2, pos);
+
+	dict_write_uint8(iterator, 3, firstListRequest ? 1 : 0);
+	firstListRequest = false;
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
@@ -279,6 +283,7 @@ static void window_appear(Window* me) {
 	allocateData();
 	menu_layer_set_selected_index(menuLayer, MenuIndex(0, notifications->centerIndex), MenuRowAlignCenter, false);
 
+	firstListRequest = true;
 	requestAdditionalEntries();
 }
 
