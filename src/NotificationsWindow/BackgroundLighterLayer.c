@@ -48,15 +48,15 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
             if (config_whiteText)
             {
                 curPixel.r = max(0, curPixel.r - 2);
-                curPixel.g = max(0, curPixel.g - 3);
-                curPixel.b = max(0, curPixel.b - 1);
+                curPixel.g = max(0, curPixel.g - 2);
+                curPixel.b = max(0, curPixel.b - 2);
 
             }
             else
             {
                 curPixel.r = min(3, curPixel.r + 2);
-                curPixel.g = min(3, curPixel.g + 3);
-                curPixel.b = min(3, curPixel.b + 1);
+                curPixel.g = min(3, curPixel.g + 2);
+                curPixel.b = min(3, curPixel.b + 2);
 
             }
 
