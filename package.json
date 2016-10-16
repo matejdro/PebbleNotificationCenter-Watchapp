@@ -3,7 +3,7 @@
   "author": "matejdro",
   "private": true,
   "dependencies": {
-    "pebble-activity-indicator-layer": "1.0.0"
+    "pebble-activity-indicator-layer": "1.0.3"
   },
   "keywords": [
     "pebble-app"
@@ -53,7 +53,9 @@
     "targetPlatforms": [
       "aplite",
       "basalt",
-      "chalk"
+      "chalk",
+	  "diorite",
+	  "emery"
     ],
     "capabilities": []
   },
