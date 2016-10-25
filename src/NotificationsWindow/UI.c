@@ -55,7 +55,7 @@ static void calculateTextSize(TextParameters* textBox, GRect textAreaFrame)
             graphics_text_attributes_enable_paging(textBox->attributes, textOriginPointOnScreen, textAreaFrame);
         }
 
-        textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w - 4, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes).h);
+        textBox->bounds.size = GSize(textAreaFrame.size.w, graphics_text_layout_get_content_size_with_attributes(textBox->text, textBox->font, GRect(0, 0, textAreaFrame.size.w, 30000), GTextOverflowModeWordWrap, TEXT_ALIGNMENT, textBox->attributes).h);
 }
 
 void nw_ui_refresh_notification(void)
@@ -136,8 +136,9 @@ void nw_ui_refresh_notification(void)
     if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
         verticalSize = windowHeight * 2;
 
-    layer_set_frame(textDisplayLayer, GRect(0, 0, textAreaFrame.size.w, verticalSize));
-    scroll_layer_set_content_size(scroll, GSize(textAreaFrame.size.w, verticalSize));
+    uint16_t totalTextWidthWithoutMargin = textAreaFrame.size.w + 4;
+    layer_set_frame(textDisplayLayer, GRect(0, 0, totalTextWidthWithoutMargin, verticalSize));
+    scroll_layer_set_content_size(scroll, GSize(totalTextWidthWithoutMargin, verticalSize));
     layer_mark_dirty(textDisplayLayer);
 
     nw_ui_refresh_picked_indicator();
