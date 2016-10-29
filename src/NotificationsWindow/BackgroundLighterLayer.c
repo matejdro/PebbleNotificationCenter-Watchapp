@@ -47,9 +47,9 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
 
             if (config_whiteText)
             {
-                curPixel.r = max(0, curPixel.r - 2);
-                curPixel.g = max(0, curPixel.g - 2);
-                curPixel.b = max(0, curPixel.b - 2);
+                curPixel.r = curPixel.r / 2;
+                curPixel.g = curPixel.g / 2;
+                curPixel.b = curPixel.b / 2;
 
             }
             else
