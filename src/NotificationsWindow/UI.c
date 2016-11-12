@@ -8,8 +8,10 @@
 #include "NotificationsWindow.h"
 #include "../NotificationCenter.h"
 #include "BackgroundLighterLayer.h"
+#include "../util.h"
 
 #define NOTIFICATION_ICON_SIZE 30
+#define SINGLE_LINE_SCROLL_BY 50
 
 typedef struct
 {
@@ -24,6 +26,7 @@ static const GTextAlignment TEXT_ALIGNMENT = PBL_IF_ROUND_ELSE(GTextAlignmentCen
 static int16_t windowHeight;
 static int16_t statusbarSize;
 static int16_t yScrollOffset = 0;
+static int16_t maxScroll = 0;
 
 #ifdef PBL_COLOR
 static BitmapLayer* notificationBitmapLayer;
@@ -136,6 +139,17 @@ void nw_ui_refresh_notification(void)
     if (additionalYOffset != 0 && verticalSize < windowHeight * 2)
         verticalSize = windowHeight * 2;
 
+    // On square screens we don't need to scroll all the way down on the last page
+    // (we can adjust scroll size in such a way that last line of the content ends at the end of the screen).
+    // On round we need to scroll exactly page-by-page, because of the wrapping
+    #ifdef PBL_ROUND
+        int16_t scrollBy = config_scrollByPage ? windowHeight : SINGLE_LINE_SCROLL_BY;
+        verticalSize = divCeil(verticalSize, scrollBy) * scrollBy;
+        maxScroll = -verticalSize;
+    #else
+        maxScroll = -verticalSize + windowHeight;
+    #endif
+
     uint16_t totalTextWidthWithoutMargin = textAreaFrame.size.w + 4;
     layer_set_frame(textDisplayLayer, GRect(0, 0, totalTextWidthWithoutMargin, verticalSize));
     scroll_layer_set_content_size(scroll, GSize(totalTextWidthWithoutMargin, verticalSize));
@@ -201,7 +215,7 @@ void nw_ui_scroll_to_notification_start(void)
     if (notification != NULL)
     {
        if (notification->scrollToEnd)
-           scrollTo = -scroll_layer_get_content_size(scroll).h + windowHeight;
+           scrollTo = maxScroll;
 
 #ifdef PBL_COLOR
         else if (notification->imageSize > 0)
@@ -218,7 +232,7 @@ void nw_ui_scroll_to_notification_start(void)
 
 void nw_ui_scroll_notification(bool down)
 {
-    int16_t scrollBy = config_scrollByPage ? windowHeight : 50;
+    int16_t scrollBy = config_scrollByPage ? windowHeight : SINGLE_LINE_SCROLL_BY;
 
     GSize size = scroll_layer_get_content_size(scroll);
 
@@ -229,7 +243,6 @@ void nw_ui_scroll_notification(bool down)
         pageNumber++;
 
     yScrollOffset = pageNumber * scrollBy;
-    int16_t maxScroll = -size.h + windowHeight;
 
     if (yScrollOffset < maxScroll)
         yScrollOffset = maxScroll;
