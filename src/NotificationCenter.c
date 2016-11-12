@@ -5,7 +5,7 @@
 #include "NotificationListWindow.h"
 #include "NotificationsWindow/Comm.h"
 
-const uint16_t PROTOCOL_VERSION = 41;
+const uint16_t PROTOCOL_VERSION = 42;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
@@ -29,6 +29,10 @@ bool config_scrollByPage;
 bool config_disconnectedNotification;
 bool config_gestures;
 bool main_noMenu;
+
+#ifdef PBL_COLOR
+bool config_skew_background_image_colors;
+#endif
 
 uint32_t appmessage_max_size;
 
@@ -156,12 +160,15 @@ static void received_config(DictionaryIterator *received)
 		config_periodicVibrationTotalDuration += config_periodicVibrationPattern[i / 2];
 	}
 
+#if PBL_COLOR
+    config_skew_background_image_colors = (data[13] & 0x10) != 0;
+#endif
+
 	gotConfig = true;
 	loadingMode = false;
 
 	if (!main_noMenu)
 		show_menu();
-
 }
 
 static void received_data(DictionaryIterator *received, void *context) {

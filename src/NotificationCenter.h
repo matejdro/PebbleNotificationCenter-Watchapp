@@ -39,6 +39,10 @@ extern bool config_scrollByPage;
 extern bool config_disconnectedNotification;
 extern bool config_gestures;
 
+#ifdef PBL_COLOR
+    extern bool config_skew_background_image_colors;
+#endif
+
 extern bool main_noMenu;
 
 extern bool closingMode;

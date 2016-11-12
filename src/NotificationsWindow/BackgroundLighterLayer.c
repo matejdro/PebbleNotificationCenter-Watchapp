@@ -45,19 +45,38 @@ void backgroud_lighter_layer_update(Layer* me, GContext* ctx)
         {
             GColor curPixel = (GColor8) {.argb = rowPixelData[x]};
 
-            if (config_whiteText)
+            if (config_skew_background_image_colors)
             {
-                curPixel.r = curPixel.r / 2;
-                curPixel.g = curPixel.g / 2;
-                curPixel.b = curPixel.b / 2;
+                if (config_whiteText)
+                {
+                    curPixel.r = max(0, curPixel.r - 3);
+                    curPixel.g = max(0, curPixel.g - 2);
+                    curPixel.b = max(0, curPixel.b - 1);
 
+                }
+                else
+                {
+                    curPixel.r = min(3, curPixel.r + 2);
+                    curPixel.g = min(3, curPixel.g + 2);
+                    curPixel.b = min(3, curPixel.b + 1);
+
+                }
             }
             else
             {
-                curPixel.r = min(3, curPixel.r + 2);
-                curPixel.g = min(3, curPixel.g + 2);
-                curPixel.b = min(3, curPixel.b + 2);
+                if (config_whiteText)
+                {
+                    curPixel.r = curPixel.r / 2;
+                    curPixel.g = curPixel.g / 2;
+                    curPixel.b = curPixel.b / 2;
 
+                }
+                else
+                {
+                    curPixel.r = min(3, curPixel.r + 2);
+                    curPixel.g = min(3, curPixel.g + 2);
+                    curPixel.b = min(3, curPixel.b + 2);
+                }
             }
 
             rowPixelData[x] = curPixel.argb;
