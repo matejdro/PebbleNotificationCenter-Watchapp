@@ -11,6 +11,7 @@
 #include "NotificationStorage.h"
 
 static int8_t pickedAction = -1;
+static bool removeBusyOnSent = false;
 
 void nw_send_action_menu_result(int action)
 {
@@ -75,6 +76,20 @@ void nw_send_select_action(int32_t notificationId, uint8_t actionType)
     app_message_outbox_send();
 
     nw_set_busy_state(true);
+}
+
+static void nw_confirm_notification(int32_t notificationId)
+{
+    nw_set_busy_state(true);
+    removeBusyOnSent = true;
+
+    DictionaryIterator *iterator;
+    app_message_outbox_begin(&iterator);
+    dict_write_uint8(iterator, 0, 1);
+    dict_write_uint8(iterator, 1, 0);
+    dict_write_int32(iterator, 2, notificationId);
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+    app_message_outbox_send();
 }
 
 static void received_message_new_notification(DictionaryIterator *received)
@@ -185,6 +200,8 @@ static void received_message_new_notification(DictionaryIterator *received)
             }
         }
     }
+
+    nw_confirm_notification(notification->id);
 
     if (numOfNotifications == 1 || (autoSwitch && !actions_menu_is_displayed()))
         nw_switch_to_notification(numOfNotifications - 1);
@@ -347,4 +364,9 @@ void nw_data_sent_callback(void)
 {
     if (pickedAction > -1)
         nw_send_action_menu_result(pickedAction);
+    else if (removeBusyOnSent)
+    {
+        nw_set_busy_state(false);
+        removeBusyOnSent = false;
+    }
 }
