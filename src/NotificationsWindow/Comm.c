@@ -185,6 +185,8 @@ static void received_message_new_notification(DictionaryIterator *received)
     notification->imageSize = configBytes[11] << 8 | configBytes[12];
 #endif
 
+    nw_confirm_notification(notification->id);
+
     if (notification->inList)
     {
         for (int i = 0; i < numOfNotifications; i++)
@@ -200,8 +202,6 @@ static void received_message_new_notification(DictionaryIterator *received)
             }
         }
     }
-
-    nw_confirm_notification(notification->id);
 
     if (numOfNotifications == 1 || (autoSwitch && !actions_menu_is_displayed()))
         nw_switch_to_notification(numOfNotifications - 1);
