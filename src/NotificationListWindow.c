@@ -104,6 +104,13 @@ static void sendpickedEntry(int16_t pos) {
 }
 
 static void requestAdditionalEntries(void) {
+	// Do not request more list entries if user already picked something
+	if (pickedEntry >= 0)
+	{
+		return;
+	}
+
+
 	uint8_t filledDown = cb_getNumOfLoadedSpacesDownFromCenter(notifications, numEntries);
 	uint8_t filledUp = cb_getNumOfLoadedSpacesUpFromCenter(notifications);
 
