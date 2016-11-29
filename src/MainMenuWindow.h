@@ -14,5 +14,6 @@ void show_menu(void);
 void show_old_watchapp_error(void);
 void show_old_android_error(void);
 void show_disconnected_error(void);
+void show_quitting(void);
 
 #endif /* MAINMENU_H_ */

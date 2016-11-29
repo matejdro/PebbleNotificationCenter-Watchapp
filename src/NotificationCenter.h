@@ -47,6 +47,7 @@ extern bool main_noMenu;
 
 extern bool closingMode;
 extern bool loadingMode;
+extern bool rejectNotifications;
 
 extern uint32_t appmessage_max_size;
 

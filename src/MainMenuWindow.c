@@ -72,10 +72,26 @@ void show_disconnected_error(void)
     text_layer_set_text(loadingLayer, "Notification Center\n\nPhone is not connected.");
 }
 
+void show_quitting(void)
+{
+    layer_set_hidden((Layer *) loadingLayer, true);
+    layer_set_hidden((Layer *) quitTitle, false);
+    layer_set_hidden((Layer *) quitText, false);
+
+#ifndef PBL_LOW_MEMORY
+    activity_indicator_layer_set_animating(loadingIndicator, false);
+    layer_set_hidden(activity_indicator_layer_get_layer(loadingIndicator), true);
+#endif
+
+    text_layer_set_text(quitTitle, "Press back again if app does not close in several seconds");
+	text_layer_set_text(quitText, "Quitting...\n Please wait");
+}
+
 static void show_error_base(void)
 {
 	layer_set_hidden((Layer *) loadingLayer, false);
-	layer_set_hidden((Layer *) quitTitle, true);
+    layer_set_hidden((Layer *) menuLayer, true);
+    layer_set_hidden((Layer *) quitTitle, true);
 	layer_set_hidden((Layer *) quitText, true);
 	if (menuLayer != NULL) layer_set_hidden((Layer *) menuLayer, true);
 
@@ -293,12 +309,10 @@ static void window_appears(Window* window)
 
     quitTitle = text_layer_create(GRect(0, 70 + STATUSBAR_Y_OFFSET, windowWidth, 50));
 	text_layer_set_text_alignment(quitTitle, GTextAlignmentCenter);
-	text_layer_set_text(quitTitle, "Press back again if app does not close in several seconds");
 	layer_add_child(topLayer, (Layer*) quitTitle);
 
 	quitText = text_layer_create(GRect(0, 10 + STATUSBAR_Y_OFFSET, windowWidth, 50));
 	text_layer_set_text_alignment(quitText, GTextAlignmentCenter);
-	text_layer_set_text(quitText, "Quitting...\n Please wait");
 	text_layer_set_font(quitText, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
 	layer_add_child(topLayer, (Layer*) quitText);
 
@@ -339,6 +353,8 @@ static void window_appears(Window* window)
 	setCurWindow(0);
 	if (menuLoaded && !closingMode)
 		show_menu();
+	else
+		show_quitting();
 
 	app_timer_register(3000, closing_timer, NULL);
 }

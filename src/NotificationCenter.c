@@ -5,7 +5,7 @@
 #include "NotificationListWindow.h"
 #include "NotificationsWindow/Comm.h"
 
-const uint16_t PROTOCOL_VERSION = 42;
+const uint16_t PROTOCOL_VERSION = 43;
 
 int8_t curWindow = 0;
 bool gotConfig = false;
@@ -38,6 +38,7 @@ uint32_t appmessage_max_size;
 
 bool closingMode = false;
 bool loadingMode = false;
+bool rejectNotifications = false;
 
 static const char* fonts[] = {
 		FONT_KEY_GOTHIC_14,
@@ -164,11 +165,31 @@ static void received_config(DictionaryIterator *received)
     config_skew_background_image_colors = (data[13] & 0x10) != 0;
 #endif
 
-	gotConfig = true;
 	loadingMode = false;
+    gotConfig = true;
 
-	if (!main_noMenu)
-		show_menu();
+    bool respectQuietTime = (data[13] & 0x20) != 0;
+    if (respectQuietTime && quiet_time_is_active())
+    {
+        AppLaunchReason launchReason = launch_reason();
+        if (launchReason == APP_LAUNCH_PHONE)
+        {
+            // App was launched by phone, but quiet time is active. Lets bail out.
+            closingMode = true;
+            rejectNotifications = true;
+            gotConfig = false;
+        }
+
+    }
+
+    if (rejectNotifications)
+    {
+        show_quitting();
+    }
+	else if (!main_noMenu)
+    {
+        show_menu();
+    }
 }
 
 static void received_data(DictionaryIterator *received, void *context) {
@@ -228,7 +249,8 @@ void closeApp(void)
 	app_message_outbox_begin(&iterator);
 	dict_write_uint8(iterator, 0, 0);
 	dict_write_uint8(iterator, 1, 3);
-	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+    dict_write_uint8(iterator, 2, rejectNotifications ? 1 : 0);
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 	app_message_outbox_send();
 
 	closingMode = true;
