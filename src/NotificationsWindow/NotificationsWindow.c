@@ -205,7 +205,7 @@ void accelerometer_shake(AccelAxisType axis, int32_t direction)
     if (vibrating) //Vibration seems to generate a lot of false positives
         return;
 
-    if (actions_menu_is_displayed())
+    if (config_gestures && actions_menu_is_displayed())
     {
         nw_send_action_menu_result(actions_menu_get_selected_index());
         return;
