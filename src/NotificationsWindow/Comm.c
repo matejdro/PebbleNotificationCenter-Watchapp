@@ -4,6 +4,7 @@
 
 #include <pebble.h>
 #include "Comm.h"
+#include "../AppMessage.h"
 #include "ActionsMenu.h"
 #include "NotificationsWindow.h"
 #include "../NotificationCenter.h"
@@ -18,19 +19,19 @@ void nw_send_action_menu_result(int action)
     pickedAction = -1;
 
     DictionaryIterator *iterator;
-    AppMessageResult result = app_message_outbox_begin(&iterator);
+    AppMessageResult result = reliable_app_message_outbox_begin(&iterator);
     if (result != APP_MSG_OK)
     {
         pickedAction = action;
         return;
     }
 
-    dict_write_uint8(iterator, 0, 4);
-    dict_write_uint8(iterator, 1, 2);
-    dict_write_uint8(iterator, 2, action);
+    reliable_app_message_write_uint8(iterator, 0, 4);
+    reliable_app_message_write_uint8(iterator, 1, 2);
+    reliable_app_message_write_uint8(iterator, 2, action);
 
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-    app_message_outbox_send();
+    reliable_app_message_outbox_send();
 
     nw_set_busy_state(true);
     actions_menu_hide();
@@ -52,12 +53,12 @@ void nw_send_reply_text(char* text)
 void nw_send_list_notification_switch(int8_t change)
 {
     DictionaryIterator *iterator;
-    app_message_outbox_begin(&iterator);
-    dict_write_uint8(iterator, 0, 2);
-    dict_write_uint8(iterator, 1, 2);
-    dict_write_int8(iterator, 2, change);
+    reliable_app_message_outbox_begin(&iterator);
+    reliable_app_message_write_uint8(iterator, 0, 2);
+    reliable_app_message_write_uint8(iterator, 1, 2);
+    reliable_app_message_write_int8(iterator, 2, change);
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-    app_message_outbox_send();
+    reliable_app_message_outbox_send();
 
     nw_set_busy_state(true);
 }
@@ -65,15 +66,15 @@ void nw_send_list_notification_switch(int8_t change)
 void nw_send_select_action(int32_t notificationId, uint8_t actionType)
 {
     DictionaryIterator *iterator;
-    app_message_outbox_begin(&iterator);
-    dict_write_uint8(iterator, 0, 4);
-    dict_write_uint8(iterator, 1, 0);
+    reliable_app_message_outbox_begin(&iterator);
+    reliable_app_message_write_uint8(iterator, 0, 4);
+    reliable_app_message_write_uint8(iterator, 1, 0);
 
-    dict_write_int32(iterator, 2, notificationId);
-    dict_write_uint8(iterator, 3, actionType);
+    reliable_app_message_write_int32(iterator, 2, notificationId);
+    reliable_app_message_write_uint8(iterator, 3, actionType);
 
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-    app_message_outbox_send();
+    reliable_app_message_outbox_send();
 
     nw_set_busy_state(true);
 }
@@ -84,12 +85,12 @@ static void nw_confirm_notification(int32_t notificationId)
     removeBusyOnSent = true;
 
     DictionaryIterator *iterator;
-    app_message_outbox_begin(&iterator);
-    dict_write_uint8(iterator, 0, 1);
-    dict_write_uint8(iterator, 1, 0);
-    dict_write_int32(iterator, 2, notificationId);
+    reliable_app_message_outbox_begin(&iterator);
+    reliable_app_message_write_uint8(iterator, 0, 1);
+    reliable_app_message_write_uint8(iterator, 1, 0);
+    reliable_app_message_write_int32(iterator, 2, notificationId);
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-    app_message_outbox_send();
+    reliable_app_message_outbox_send();
 }
 
 static void received_message_new_notification(DictionaryIterator *received)

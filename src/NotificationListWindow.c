@@ -2,6 +2,7 @@
 #include <pebble_fonts.h>
 #include "NotificationCenter.h"
 #include "CircularBuffer.h"
+#include "AppMessage.h"
 
 #define LIST_STORAGE_SIZE 6
 
@@ -75,32 +76,32 @@ static void freeData(void) {
 
 static void requestNotification(uint16_t pos) {
 	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
-	dict_write_uint8(iterator, 0, 2);
-	dict_write_uint8(iterator, 1, 0);
-	dict_write_uint16(iterator, 2, pos);
+	reliable_app_message_outbox_begin(&iterator);
+	reliable_app_message_write_uint8(iterator, 0, 2);
+	reliable_app_message_write_uint8(iterator, 1, 0);
+	reliable_app_message_write_uint16(iterator, 2, pos);
 
-	dict_write_uint8(iterator, 3, firstListRequest ? 1 : 0);
+	reliable_app_message_write_uint8(iterator, 3, firstListRequest ? 1 : 0);
 	firstListRequest = false;
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
+	reliable_app_message_outbox_send();
 }
 
 static void sendpickedEntry(int16_t pos) {
 	DictionaryIterator *iterator;
-	AppMessageResult result = app_message_outbox_begin(&iterator);
+	AppMessageResult result = reliable_app_message_outbox_begin(&iterator);
 	if (result != APP_MSG_OK) {
 		pickedEntry = pos;
 		return;
 	}
 
-	dict_write_uint8(iterator, 0, 2);
-	dict_write_uint8(iterator, 1, 1);
-	dict_write_uint16(iterator, 2, pos);
+	reliable_app_message_write_uint8(iterator, 0, 2);
+	reliable_app_message_write_uint8(iterator, 1, 1);
+	reliable_app_message_write_uint16(iterator, 2, pos);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
+	reliable_app_message_outbox_send();
 }
 
 static void requestAdditionalEntries(void) {

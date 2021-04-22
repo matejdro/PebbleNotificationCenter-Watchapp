@@ -11,6 +11,7 @@
 #include "Buttons.h"
 #include "Comm.h"
 #include "Gestures.h"
+#include "../AppMessage.h"
 
 uint32_t elapsedTime = 0;
 bool appIdle = true;
@@ -63,12 +64,12 @@ void nw_switch_to_notification(uint8_t index)
         //Request image for currently selected notification
 
         DictionaryIterator *iterator;
-        app_message_outbox_begin(&iterator);
-        dict_write_uint8(iterator, 0, 5);
-        dict_write_uint8(iterator, 1, 0);
-        dict_write_int32(iterator, 2, newNotification->id);
+        reliable_app_message_outbox_begin(&iterator);
+        reliable_app_message_write_uint8(iterator, 0, 5);
+        reliable_app_message_write_uint8(iterator, 1, 0);
+        reliable_app_message_write_int32(iterator, 2, newNotification->id);
         app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-        app_message_outbox_send();
+        reliable_app_message_outbox_send();
 
     }
     #endif

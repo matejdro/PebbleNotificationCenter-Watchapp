@@ -2,6 +2,7 @@
 #include <pebble_fonts.h>
 #include <pebble-activity-indicator-layer/activity-indicator-layer.h>
 #include "NotificationCenter.h"
+#include "AppMessage.h"
 #include "NotificationsWindow/NotificationsWindow.h"
 
 static Window* window;
@@ -217,17 +218,17 @@ static void notifications_picked(int index)
 	//show_loading();
 
 	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
+	reliable_app_message_outbox_begin(&iterator);
 
 	if (index == 0 && !config_showActive)
 		index = 1;
 
-	dict_write_uint8(iterator, 0, 0);
-	dict_write_uint8(iterator, 1, 1);
-	dict_write_uint8(iterator, 2, index);
+	reliable_app_message_write_uint8(iterator, 0, 0);
+	reliable_app_message_write_uint8(iterator, 1, 1);
+	reliable_app_message_write_uint8(iterator, 2, index);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
+	reliable_app_message_outbox_send();
 }
 
 static void settings_picked(int index)
@@ -255,15 +256,15 @@ static void settings_picked(int index)
 	update_settings();
 
 	DictionaryIterator *iterator;
-	app_message_outbox_begin(&iterator);
+	reliable_app_message_outbox_begin(&iterator);
 
-	dict_write_uint8(iterator, 0, 0);
-	dict_write_uint8(iterator, 1, 2);
-	dict_write_uint8(iterator, 2, sendingIndex);
-	dict_write_uint8(iterator, 3, sendingValue);
+	reliable_app_message_write_uint8(iterator, 0, 0);
+	reliable_app_message_write_uint8(iterator, 1, 2);
+	reliable_app_message_write_uint8(iterator, 2, sendingIndex);
+	reliable_app_message_write_uint8(iterator, 3, sendingValue);
 
 	app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
-	app_message_outbox_send();
+	reliable_app_message_outbox_send();
 
 }
 
